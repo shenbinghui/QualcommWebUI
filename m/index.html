@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/jquery.mobile-1.4.3.css"/>
+    <link rel="stylesheet" href="css/common.css"/>
+</head>
+<body>
+    <div data-role="page" id="main" class="hide">
+
+        <div id='container'></div>
+
+        <div data-role="popup" id="dialog" data-dismissible="false"
+             style="max-width:400px;" class="ui-corner-all">
+            <div>
+                <h1 id="title"></h1>
+            </div>
+            <hr/>
+            <div data-role="content">
+                <p id="dialog_message"></p>
+                <div class="hide promptDiv">
+                    <input type="text" id="promptInput" />
+                </div>
+            </div>
+            <div class="ui-grid-a" id="dialog_buttons">
+                <div class="ui-block-a" id="nobtn">
+                    <a href="javascript:void(0);" data-role="button"
+                       data-trans="no" data-inline="true" class="ui-btn"></a>
+                </div>
+                <div class="ui-block-b" id="yesbtn">
+                    <a href="javascript:void(0);" data-role="button"
+                       data-trans="yes" data-inline="true" class="ui-btn"></a>
+                </div>
+                <div class="ui-block-a" id="cancelbtn">
+                    <a href="javascript:void(0);" data-role="button"
+                       data-trans="cancel" data-inline="true" class="ui-btn"></a>
+                </div>
+                <div class="ui-block-b" id="continuebtn">
+                    <a href="javascript:void(0);" data-role="button"
+                       data-trans="continue" data-inline="true" class="ui-btn"></a>
+                </div>
+                <div style="width: 100%" id="okbtn">
+                    <a href="javascript:void(0);" data-role="button"
+                       data-trans="ok" data-inline="true" class="ui-btn"></a>
+                </div>
+                <div style="width: 100%" id="uploadbtn">
+                    <a href="javascript:void(0);" data-role="button"
+                       data-trans="upload" data-inline="true" class="ui-btn"></a>
+                </div>
+            </div>
+        </div>
+        <div id="loadingBackground"></div>
+    </div><!-- /page -->
+    <script src="js/lib/require/require.js" data-main="js/main"></script>
+</body>
+</html>

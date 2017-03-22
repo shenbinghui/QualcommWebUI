@@ -1,0 +1,407 @@
+
+<!-- �����ײ�����-->
+<form id="trafficAlertForm">
+    <div class="dialog" id="sms_dialog" style="left: 35%; top: 129.5px; display: none;">
+    <div class="sms_dialog_top"></div>
+    <div class="sms_dialog_content">
+        <div class="sms_dialog_header">
+            <span class="dialog_header_left" data-trans="data_settings"></span>
+            <span class="dialog_header_right">
+                <a href="javascript:void(0);" title="close" class="dialog_close_btn" tabindex="-1">
+                <img src="img_mifi/dialog_close_btn.png" alt="" data-bind="click:setting_month_data_cancel"></a>
+            </span>
+        </div>
+        <div class="sms_dialog_table">
+            <div id="statistics_mobile_name" class="agile_set_dialog">
+                <h2 data-trans = "Mobile_Network"></h2>
+                <table>
+                    <tbody>
+                    <tr>
+                        <td data-trans = "Start_Date"></td>
+                        <td>
+                            <select id="mobile_start_date_select" tabindex="-1">
+                                <option value="1">1</option><option value="2">2</option>
+                                <option value="3">3</option><option value="4">4</option>
+                                <option value="5">5</option><option value="6">6</option>
+                                <option value="7">7</option><option value="8">8</option>
+                                <option value="9">9</option><option value="10">10</option>
+                                <option value="11">11</option><option value="12">12</option>
+                                <option value="13">13</option><option value="14">14</option>
+                                <option value="15">15</option><option value="16">16</option>
+                                <option value="17">17</option><option value="18">18</option>
+                                <option value="19">19</option><option value="20">20</option>
+                                <option value="21">21</option><option value="22">22</option>
+                                <option value="23">23</option><option value="24">24</option>
+                                <option value="25">25</option><option value="26">26</option>
+                                <option value="27">27</option><option value="28">28</option>
+                                <option value="29">29</option><option value="30">30</option>
+                                <option value="31">31</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr id="mobile_data_volume_tr">
+                        <td data-trans="month_data"></td>
+                        <td>
+                            <input style="width:100px;" type="text" class="Arabic_dialupNumber" id="mobile_data_volume" maxlength="4" data-bind="value:limitDataMonth">
+                            <span>
+                                <select id="mobile_data_nuit_select" style="width:60px;" tabindex="-1" data-bind=" value: selectedDataUnit">
+                                    <option value="1">MB</option>
+                                    <option value="1024">GB</option>
+                                    <option value="1048576">TB</option>
+                                </select>
+                            </span> </td> </tr>
+                    <tr id="mobile_threshold_tr">
+                        <td data-trans="traffic_threshold"></td>
+                        <td> <input style="width:50px;" class="Arabic_dialupNumber" id="mobile_threshold_select" maxlength="3" data-bind="value: alertDataReach"> % </td>
+                    </tr>
+                    <!--<tr id="mobile_limit_tr">-->
+                        <!--<td> �ƶ�������ƣ�</td>-->
+                        <!--<td>-->
+                            <!--<input id="mobile_reminder_select" name="mobile_reminder_select" type="checkbox" value="1">&nbsp;<label for="mobile_reminder_select">LCD��Ļ����</label>&nbsp;&nbsp;&nbsp;&nbsp;-->
+                            <!--<input id="mobile_offnet_select" name="mobile_offnet_select" type="checkbox" value="1">&nbsp;<label for="mobile_offnet_select">����</label>-->
+                        <!--</td>-->
+                    <!--</tr>-->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="sms_dialog_table_bottom">
+            <div class="dialog_table_r">
+                <span class="button_wrapper pop_Save" id="pop_Save">
+                	
+                <label id="aaaa" data-bind="click: submit_trafficAlertForm">
+	            <span class="button_wrapper"><span class="button_left"><span class="button_right"><span class="button_center" data-trans="apply"></span></span></span></span>
+	        </label>
+                </span>&nbsp;&nbsp;&nbsp;&nbsp;
+                <span class="button_wrapper pop_Cancel" id="pop_Cancel" data-bind="click:setting_month_data_cancel">
+                    <span class="button_left">
+                        <span class="button_right">
+                            <span class="button_center"><a href="javascript:void(0);" title="" tabindex="-1" data-trans="cancel"> </a>
+                            </span>
+                        </span>
+                    </span>
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="sms_dialog_bottom"></div>
+</div>
+</form>
+<!-- �����ʷ���-->
+<div class="dialog" id="history_setting_dialog" style="left:35% ; top: 350.5px;">
+    <div class="dialog_top"></div>
+
+    <div class="dialog_content">
+        <div class="dialog_header">
+            <span class="dialog_header_left" data-trans="clear_confirm"></span>
+			<span class="dialog_header_right" data-bind="click:setting_history_data_cancel">
+				<a href="javascript:void(0);" title="" class="dialog_close_btn" tabindex="-1"><img src="img_mifi/dialog_close_btn.png" title="" alt=""></a>
+			</span>
+        </div>
+        <div class="dialog_table" data-trans="clear_prompt"></div>
+        <div class="dialog_table_bottom">
+            <div class="dialog_table_r">
+				<span class="button_wrapper pop_confirm" id="pop_confirm" data-bind="click:setting_history_data_save">
+					<span class="button_left">
+						<span class="button_right">
+							<span class="button_center" data-trans="confirm"><!--a href="javascript:void(0);" title="" tabindex="-1" data-trans="confirm"></a--></span>
+						</span>
+	 				</span>
+				</span>&nbsp;&nbsp;&nbsp;&nbsp;
+				<span class="button_wrapper pop_Cancel" data-bind="click:setting_history_data_cancel">
+					<span class="button_left">
+						<span class="button_right">
+							<span class="button_center"><a href="javascript:void(0);" title="" tabindex="-1" data-trans="cancel"></a></span>
+						</span>
+					</span>
+				</span>
+            </div>
+        </div>
+    </div>
+    <div class="dialog_bottom"></div>
+</div>
+
+<!--�м�����-->
+<div class="content">
+    <div class="status_title">
+        <h2 data-trans="traffic_data_plan"></h2>
+    </div>
+    <!--δ�����ײ���������-->
+    <div class="agile_station" style="display: block;">
+        <div id="statistics_mobile">
+            <h2>Mobile NetWork</h2>
+            <table width="800" border="0" cellpadding="0" cellspacing="0" class="agile_statistics_table">
+                <tbody>
+                <tr>
+                    <td>
+                        <div>
+                            <div class="agile_float">
+                                    current statistics:
+                            </div>
+                            <div id="mobile_current_volume" class="agile_td_ltr">109.66 KB</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            <div class="agile_float" >
+                                connected time:
+                            </div>
+
+                            <div id="mobile_current_duration" class="agile_td_ltr" >
+                                <span data-bind="text:connected_Time"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div>
+                            <div class="agile_float" >
+                                total statistics:
+                            </div>
+                            <div id="mobile_history_volume" class="agile_td_ltr" data-bind="text: trafficUsed"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            <div class="agile_float">
+                                connected time:
+                            </div>
+                            <div id="mobile_history_duration" class="agile_td_ltr">31:07:44</div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!--�����ײ� ������-->
+        <div id="statistics_wifi" style="display: none;">
+            <h2 class="agile_station_border_top">���߾�����</h2>
+            <table width="800" border="0" cellpadding="0" cellspacing="0" class="agile_statistics_table">
+                <tbody>
+                <tr>
+                    <td>
+                        <div>
+                            <div class="agile_float">
+                                ��ǰ������
+                            </div>
+                            <div id="wifi_current_volume" class="agile_td_ltr"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            <div class="agile_float">
+                                ����ʱ�䣺
+                            </div>
+                            <div id="wifi_current_duration" class="agile_td_ltr"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div>
+                            <div class="agile_float">
+                                ��������
+                            </div>
+                            <div id="wifi_history_volume" class="agile_td_ltr"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            <div class="agile_float">
+                                ����ʱ�䣺
+                            </div>
+                            <div id="wifi_history_duration" class="agile_td_ltr"></div>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    <!--�����ײͰ�ť-->
+    <div class="agile_set_package agile_station_button">
+        <!--create_button(IDS_statistics_aglie_set_package, 'button_set_package'); -->
+            <span class="button_wrapper" id="button_set_package" data-bind="click:setting_month_data">
+                <span class="button_left">
+                    <span class="button_right">
+                        <span class="button_center">�����¶����</span>
+                    </span>
+                </span>
+            </span>
+    </div>
+    <!--�����ײ���������-->
+    <div id = "agile_lgtab" class="agile_lgtab">
+        <div class="agile_lgtab_total">
+            <h2 data-trans="traffic_data_plan">流量统计 </h2>
+            <!--<table cellspacing="0" cellpadding="0" class="agile_lgtab_header">-->
+                <!--<tr>-->
+                    <!--<td width = "419px" id="agile_ettab_mobile">�ƶ�����</td>-->
+                    <!--<td width = "420px" id="agile_ettab_wifi">���߾�����</td>-->
+                <!--</tr>-->
+            <!--</table>-->
+            <table class='agile_lgtab_body_title'>
+                <tr>
+                    <td width="580px"  data-trans = "Month Statistics"></td>
+                    <td width="200px" class="agile_edit_align">
+                        <!--<script type="text/javascript">-->
+                        <!--create_button(IDS_statistics_aglie_edit_month_volue, 'agile_edit_volume');-->
+                        <!--</script>-->
+                        <span class="button_wrapper" id="agile_edit_volume" data-bind="click:setting_month_data">
+                            <span class="button_left"><span class="button_right">
+                                <span class="button_center" data-trans="traffic_set_month"></span>
+                            </span>
+                            </span>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+            <table class="agile_lgtab_body" style="margin-bottom:0px;">
+                <tr>
+                    <td width="640px">
+                        <div>
+                            <div class="agile_float" data-trans = "connect_time">
+                                <!--<script type="text/javascript">-->
+                                <!--dw(dialup_label_duration);-->
+                                <!--dw(common_colon);-->
+                                <!--</script>-->
+                                
+                            </div>
+                            <div id="month_duration" class="agile_td_ltr" data-bind="text:connected_Time"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="640px">
+                        <div class="agile_progress_bar">
+                            <div id="agile_used_volume" class="agile_used_bar">
+                                <span class="usedspace_bar_left" ></span>
+                            </div>
+                            <div id="agile_threshold" class="agile_threshold_bar">
+                                <span class="usedspace_bar_left" ></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <table class="agile_lgtab_body">
+                <tr>
+                    <td width="360px">
+                        <div>
+                            <div class="agile_float" data-trans = "used_statistic">
+                            	<!--div id="month_used_value" class="agile_td_ltr" data-bind="text: trafficUsed"></div-->
+                            	<span data-bind="text: trafficUsed"></span>
+                                <!--<script type="text/javascript">-->
+                                <!--dw(IDS_statistics_aglie_month_volume_used);-->
+                                <!--dw(common_colon);-->
+                                <!--</script>-->
+                            </div>
+                            <div id="month_used_value" class="agile_td_ltr" data-bind="text: trafficUsed"></div>
+                        </div>
+                    </td>
+                    <td width="370px">
+                        <div>
+                            <div class="agile_float" data-trans = "total_Statistics">
+                                <!--<script type="text/javascript">-->
+                                <!--dw(common_label_total);-->
+                                <!--dw(common_colon);-->
+                                <!--</script>-->
+                            </div>
+                            <div id="month_total_value" class="agile_td_ltr" data-bind="text:trafficLimited"></div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            <table class="agile_lgtab_body_title">
+                <tr>
+                    <td class="agile_total_volume" width="780px" data-trans = "total_used">
+                    </td>
+                </tr>
+            </table>
+            <table class="agile_lgtab_body">
+                <tr>
+                    <td width="730px">
+                        <div>
+                            <div class="agile_float" data-trans="connect_time">
+                                <!--<script type="text/javascript">-->
+                                <!--dw(dialup_label_duration);-->
+                                <!--dw(common_colon);-->
+                                <!--</script>-->
+
+                            </div>
+                            <div id="total_value_duration" class="agile_td_ltr" data-bind="text:connected_Time"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="730px">
+                        <div>
+                            <div class="agile_float" data-trans = "total used" >
+                                <!--<script type="text/javascript">-->
+                                <!--dw(IDS_statistics_aglie_month_volume_used);-->
+                                <!--dw(common_colon);-->
+                                <!--</script>-->
+                            </div>
+                            <div id="total_value_used" class="agile_td_ltr" data-bind="text: trafficUsed"></div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <div class="traffic_status">
+        <div class="note" data-trans="traffic_data_approximated">
+        </div>
+        <div id="clear_history" class="clear_history">
+            <!--create_button(common_clear_history, 'button_clear_history');-->
+                <span class="button_wrapper" id="button_clear_history" data-bind="click:setting_history_data">
+                    <span class="button_left">
+                        <span class="button_right">
+                            <span class="button_center" data-trans="traffic_clear"></span>
+                        </span>
+                    </span>
+                </span>
+
+            <table width="790" border="0" cellpadding="0" cellspacing="0" class="agile_clear_time">
+                <tbody><tr>
+                    <td width="720px" class="agile_td_pre_time">
+                        clear date:
+                    </td>
+                    <td class="agile_clear_td_ltr" id="last_clear_time">2016,3,8</td>
+                </tr>
+                </tbody></table>
+        </div>
+    </div>
+
+    <div class="status_title">
+        <h2 data-trans="wireless_access_device"></h2>
+    </div>
+    <div class="wifi_table" >
+        <table id="table_wifiClient" class="bottom_table" cellpadding="0" cellspacing="0" style="display: table;">
+            <thead>
+                <tr>
+                    <th width="60" data-trans="station_number"></th>
+                    <th data-trans="host_name"></th>
+                    <th width="200" data-trans="mac_address"></th>
+                </tr>
+            </thead>
+            <tbody data-bind="foreach:deviceInfo">
+            <tr>
+                <td data-bind="text: $index()+1"></td>
+                <td data-bind="text: hostName, attr: {id: 'hostname_txt_'+idx}"></td>
+                <td data-bind="text: macAddress"></td>
+            </tr>
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<!--�ײ��»���-->
+<!--div id="footer" class="clr_blue_hover">
+    <img src="img_mifi/logo-footer.gif" align="absbottom" alt="" border="0"><span>&nbsp;
+        <div class="rightcorner"></div>
+    </span>
+</div-->

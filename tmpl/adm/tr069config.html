@@ -1,0 +1,106 @@
+<div class="form-body">
+<form id="tr069Form">
+    <div class="form-title" data-trans='tr069config'></div>
+    <div class="content">
+		<div class="row-fluid">
+			<label class="span4 side-right" data-trans='server_url'></label>
+			<div class="span8">
+				<input type="text" id="serverURL" name="serverURL" data-bind="value: serverUrl" class="required" maxlength="256">
+			</div>
+		</div>
+		<div class="row-fluid">
+			<label class="span4 side-right" data-trans='server_user_name'></label>
+			<div class="span8">
+				<input type="text" id="serverusername" name="serverusername" data-bind="value: serverUserName" class="required" maxlength="256">
+			</div>
+		</div>
+		<div class="row-fluid">
+			<label class="span4 side-right" data-trans='server_password'></label>
+			<div class="span8">
+				<input type="password" id="serveruserpassword" name="serveruserpassword"  data-bind="value: serverPassword" class="required" maxlength="256">
+			</div>
+		</div>
+		<div class="row-fluid">
+			<label class="span4 side-right" data-trans='connection_request_url'></label>
+			<div class="span8">
+				<input type="text" data-bind="value: requestUrl" maxlength="256" disabled />
+			</div>
+		</div>
+		<div class="row-fluid">
+			<label class="span4 side-right" data-trans="connection_request_uname"></label>
+			<div class="span8">
+				<input type="text" id="connrequestname" name="connrequestname" data-bind="value: requestUserName" class="required" maxlength="256">
+			</div>
+		</div>		
+		<div class="row-fluid">
+			<label class="span4 side-right" data-trans="connection_request_password"></label>
+			<div class="span8">
+				<input type="password" id="connrequestpassword" name="connrequestpassword" data-bind="value: requestPassword" class="required" maxlength="256" />
+			</div>
+		</div>
+		<!--<div class="row-fluid">
+			<label class="span4 side-right" data-trans="port"></label>
+			<div class="span8">
+				<input type="text" id="port" name="port" data-bind="value: requestPort" class="required" maxlength="256">
+			</div>
+		</div>-->
+        <div class="row-fluid">
+            <label class="span4 side-right" data-trans="periodic_inform"></label>
+            <div class="span8">
+                <input type="radio" name="informGrp" id="informEnable" data-bind="checked: informSetting" value="1"/>
+                <label for="informEnable" data-trans="enable"></label>
+                <input type="radio" name="informGrp" id="informDisable" data-bind="checked: informSetting" value="0"/>
+                <label for="informDisable" data-trans="disable"></label>
+            </div>
+        </div>
+        <div class="row-fluid" data-bind='visible: informSetting() == "1"'>
+            <label class="span4 side-right" for="txtInformInterval" data-trans="periodic_inform_interval"></label>
+            <div class="span8">
+                <input id="txtInformInterval" name="txtInformInterval"  type="text" data-bind="value: informInterval, valueUpdate: 'keypress'" class="required" maxlength="15"/>
+            </div>
+        </div>
+        <div id="manualSetTime" class="row-fluid" data-bind='visible: informSetting() == "1"'>
+            <label class="span4 side-right" data-trans='periodic_inform_time'></label>
+            <div class="span8">
+                <select id="manualYear" data-bind="options: years, value: currentYear, optionsText: 'text', optionsValue: 'value', event:{change: initDateList}"></select>
+                <label for="manualYear" data-trans="year"></label>
+                <select id="manualMonth" data-bind="options: months, value: currentMonth, optionsText: 'text', optionsValue: 'value', event: {change: initDateList}"></select>
+                <label for="manualMonth" data-trans="month"></label>
+                <select id="manualDate" data-bind="options: dates, value: currentDate, optionsText: 'text', optionsValue: 'value'"></select>
+                <label for="manualDate" data-trans="date"></label>
+                <select id="manualHour" data-bind="options: hours, value: currentHour, optionsText: 'text', optionsValue: 'value'"></select>
+                <label for="manualHour" data-trans="hour"></label>
+                <select id="manualMinute" data-bind="options: minutes, value: currentMinute, optionsText: 'text', optionsValue: 'value'"></select>
+                <label for="manualMinute" data-trans="minute"></label>
+                <select id="manualSecond" data-bind="options: seconds, value: currentSecond, optionsText: 'text', optionsValue: 'value'"></select>
+                <label for="manualMinute" data-trans="second"></label>
+            </div>
+        </div>
+        <div class="row-fluid">
+            <label class="span4 side-right" data-trans="certificate_import"></label>
+            <div class="span8">
+                <input type="radio" name="certificateGrp" id="certificateEnable" data-bind="checked: certificateSetting" value="1"/>
+                <label for="certificateEnable" data-trans="enable"></label>
+                <input type="radio" name="certificateGrp" id="certificateDisable" data-bind="checked: certificateSetting" value="0"/>
+                <label for="certificateDisable" data-trans="disable"></label>
+            </div>
+        </div>
+    <div class="form-buttons" data-bind="visible: certificateSetting() == '0'">
+        <input type="submit" id="submitBtn069" class="btn-1" data-trans="apply" />
+    </div>
+    </div>
+</form>
+    <div class="row-fluid" data-bind='visible: certificateSetting() == "1"' style="margin-top: -35px; *+margin-top: -25px;">
+        <iframe id="certificateUploadIframe" name="certificateUploadIframe" scrolling="no" frameborder="0" width="0" height="0" style="height:0px;width:0px;"></iframe>
+        <form method="post" name="UploadCertificate" id="UploadCertificate" action="/cgi-bin/upload_tr069_cert.cgi" enctype="multipart/form-data" target="certificateUploadIframe">
+            <input id="fileField" name="filename" maxlength="200" type="file"/>
+            <div class="fileUploadDiv span3">
+                <input data-trans="import_certificate_btn" type="button" class="btn-1 marginleft5 margintop5 " onclick="certificateUploadSubmitClickHandler();" />
+            </div>
+        </form>
+    </div>
+
+	<div class="form-buttons" data-bind='visible: certificateSetting() == "1"'>
+		<input type="button" class="btn-1" data-trans="apply" onclick="$('#submitBtn069').trigger('click');"/>
+	</div>
+</div>

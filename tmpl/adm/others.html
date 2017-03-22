@@ -1,0 +1,185 @@
+<div id="innerContainer">
+    <div class="row header-row">
+        <div class="col-xs-1">
+            <a href="#home">
+                <img alt="" src="img/arrow-back.png">
+            </a>
+        </div>
+        <div class="col-xs-11">
+            <div class="form-title">
+                <h1 data-trans='advanced_settings'></h1>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-2">
+		    <div class="nav_right">
+		    <ul>
+				<li><a href="#sleep_mode" data-trans="sleep_mode"></a></li>
+				<li data-bind="visible: wanMode != 'BRIDGE'"><a href="#router_setting" data-trans="router_setting"></a></li>
+				<li data-bind="visible: wanMode != 'BRIDGE'"><a href="#firewall" data-trans="firewall"></a></li>
+				<!--<li data-bind="visible:hasUpdateCheck"><a href="#ota_update" data-trans="update_settings"></a></li>-->
+				<li data-bind="visible:hasUssd"><a href="#ussd" data-trans="USSD"></a></li>
+				<li data-bind="visible:hasUsb"><a href="#usb" data-trans="hardware_setting"></a></li>
+				<li class="active"><a href="#others" data-trans="others"></a></li>
+			</ul>
+			</div>
+		</div>
+        <div class="col-xs-10">
+        <form id="frmRestoreReset">
+            <div class="form-body">
+                <h3 class="form-title" data-trans="others_restart_reset"></h3>
+				<div class="row form-group">
+                    <div class="col-xs-12" data-trans="others_note_info"></div>
+                </div>
+                <div class="row form-group">				    
+                    <div class="col-xs-12 align-right">
+                        <input type="button" class="btn btn-primary margin-right-20" data-trans="restart_button" data-bind="click: restart"/>
+                        <input type="button" class="btn btn-primary margin-right-20" data-trans="restore_button" data-bind="visible: currentUserInChildGroup() == false, click: restore"/>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <form id="frmtrunOffDevice" data-bind="visible: turnOffSupport">
+            <div class="form-body">
+                <h3 class="form-title" data-trans="others_turn_off"></h3>
+                <div class="row form-group">
+                    <div class="col-xs-12 align-right">
+                        <input type="button" class="btn btn-primary margin-right-20" data-trans="turnoff_button" data-bind="click: turnoff"/>
+                    </div>
+                </div>
+            </div>
+        </form>
+		
+        <form data-bind="visible: fastbootSupport">
+            <div class="form-body">
+                <h3 class="form-title" data-trans="fastboot_setting"></h3>
+                <div class="row form-group">
+                    <label class="col-xs-4 side-right" data-trans="fastboot_setting"></label>
+                    <div class="col-xs-8">
+                        <div class="row">
+                            <div class="col-xs-3">
+                                <input type="radio" name="fastboot" id="fastEnable" data-bind="checked: fastbootSetting" value="1"/>
+                                <label for="fastEnable" data-trans="enable"></label>
+                            </div>
+                            <div class="col-xs-3">
+                                <input type="radio" name="fastboot" id="fastDisable" data-bind="checked: fastbootSetting" value="0"/>
+                                <label for="fastDisable" data-trans="disable"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-xs-12" data-trans="fastboot_note"></div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-xs-12 align-right">
+                        <input type="button" class="btn btn-primary margin-right-20" data-trans="apply" data-bind="click: saveFastBoot"/>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+		
+		<form id="sntpForm" data-bind="visible: SNTPSupport">
+			<div class="form-body">
+				<h3 class="form-title">SNTP</h3>
+				<div class="content">
+					<div class="row form-group">
+						<label class="col-xs-4 side-right" data-trans='local_current_time'></label>
+						<div class="col-xs-8">
+							<span class="span3" data-bind="text: localTime"></span>
+							<span>&nbsp;</span>
+							<span id="weekday" data-bind="text: day"></span>
+						</div>
+					</div>
+					<div class="row form-group">
+						<label class="col-xs-4 side-right" data-trans='time_set_mode' for="sntpSetTimeMode"></label>
+						<div class="col-xs-4">
+							<select id="sntpSetTimeMode" class="form-control" data-transid="time_set_time" data-bind="options: timeSetModes, value: currentMode, optionsText: transOption('time_set_time'), optionsValue: 'value', event:{change: changeSetTimeMode}"></select>
+						</div>					
+					</div>
+					<div id="manualSetTime" data-bind="visible: isManualSetTime">
+						<div class="row form-group">
+							<label class="col-xs-4 side-right" data-trans='time_set_time_manual'></label>							
+						
+							<div class="col-xs-8">
+									<select id="manualYear" class="form-control" style="display:inline-block; width:auto; padding-right:5px; padding-left:5px" data-bind="options: years, value: currentYear, optionsText: 'text', optionsValue: 'value', event:{change: initDateList}"></select> 
+								    <label for="manualYear" style="display:inline-block; width:auto; padding-right:0" data-trans="year"></label>
+								
+								    <select id="manualMonth" class="form-control" style="display:inline-block; width:auto; padding-right:5px; padding-left:5px" data-bind="options: months, value: currentMonth, optionsText: 'text', optionsValue: 'value', event: {change: initDateList}"></select> 
+								    <label for="manualMonth" style="display:inline-block; width:auto; padding-right:0" data-trans="month"></label>
+								
+									<select id="manualDate" class="form-control" style="display:inline-block; width:auto; padding-right:5px; padding-left:5px" data-bind="options: dates, value: currentDate, optionsText: 'text', optionsValue: 'value'"></select> 
+								    <label for="manualDate" style="display:inline-block; width:auto; padding-right:0" data-trans="date"></label>
+								
+									<select id="manualHour" class="form-control" style="display:inline-block; width:auto; padding-right:5px; padding-left:5px" data-bind="options: hours, value: currentHour, optionsText: 'text', optionsValue: 'value'"></select> 
+								    <label for="manualHour" style="display:inline-block; width:auto; padding-right:0" data-trans="hour"></label>
+								
+									<select id="manualMinute" class="form-control" style="display:inline-block; width:auto; padding-right:5px; padding-left:5px" data-bind="options: minutes, value: currentMinute, optionsText: 'text', optionsValue: 'value'"></select> 
+									<label for="manualMinute" style="display:inline-block; width:auto; padding-right:0" data-trans="minute"></label>
+							</div>
+                        </div>						
+					</div>
+					<div id="autoSntpTime" data-bind="visible: isAutoSntpTime">
+						<div class="row form-group">
+							<label class="col-xs-4 side-right" data-trans='stnp_server1' for="sntp_server1_select"></label>
+							<div class="col-xs-4">
+								<select id="sntp_server1_select" class="form-control" data-bind="options: serverList, value: currentServer0, optionsText: 'text', optionsValue: 'value', event: {change: changeServerSelect}"></select>
+							</div>
+							<div class="col-xs-4">
+							<input type="text" id="sntp_other_server0" name="sntp_other_server0" data-bind="value:customServer0, visible:isOther0" class="required form-control"/>
+							</div>
+						</div>
+						<div class="row form-group">
+							<label class="col-xs-4 side-right" data-trans='stnp_server2' for="stnp_server2_select"></label>
+							<div class="col-xs-4">
+								<select id="stnp_server2_select" class="form-control" data-bind="options: serverList, value: currentServer1, optionsText: 'text', optionsValue: 'value', event: {change: changeServerSelect}"></select>
+	                        </div>
+							<div class="col-xs-4">						
+    							<input type="text" id="sntp_other_server1" name="sntp_other_server1"  data-bind="value:customServer1, visible:isOther1" class="required form-control"/>
+							</div>
+						</div>
+						<div class="row form-group">
+							<label class="col-xs-4 side-right" data-trans='stnp_server3' for="stnp_server3_select"></label>
+							<div class="col-xs-4">
+								<select id="stnp_server3_select" class="form-control" data-bind="options: serverList, value: currentServer2, optionsText: 'text', optionsValue: 'value', event: {change: changeServerSelect}"></select>
+							</div>
+							<div class="col-xs-4">
+								<input type="text" id="sntp_other_server2" name="sntp_other_server2" data-bind="value:customServer2, visible:isOther2" class="required form-control"/>
+							</div>
+						</div>
+						<div class="row form-group">
+							<label class="col-xs-4 side-right" data-trans='time_zone' for="time_zone_select"></label>
+							<div class="col-xs-4">
+								<select id="time_zone_select" class="form-control" data-transid="time_zone" data-bind="options: timeZones, value: currentTimeZone, optionsText: transOption('time_zone'), optionsValue: 'value'"></select>
+							</div>
+						</div>
+						<div class="row form-group">
+							<label class="col-xs-4 side-right" data-trans='daylight_saving_time' for="daylight_saving_time_select"></label>
+							<div class="col-xs-4">
+								<select id="daylight_saving_time_select" class="form-control" data-transid="daylightsave" data-bind="options: daylightSaves, value: currentDaylightSave, optionsText: transOption('daylightsave'), optionsValue: 'value'"></select>
+							</div>
+						</div>			
+					</div>		
+				</div>
+				<div class="form-buttons">
+					<input type="submit" data-bind="" class="btn btn-primary margin-right-20" data-trans="apply"/>
+				</div>
+			</div>
+		</form>
+		
+        <div class="form-body">
+            <div class="content margin-top-20 line-height-30">
+                <div class="row">
+                    <a href="#pin_management">
+                        <div class="col-xs-3 arrow-right" data-trans="pin_management">
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>

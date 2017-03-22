@@ -1,0 +1,495 @@
+.hide {
+    display: none;
+}
+
+.ui-popup-screen {
+    background-color: #222;
+}
+
+.ui-state-disabled {
+    opacity: 0.5;
+    background-color: lightgray !important;
+}
+
+#dialog{
+    min-width:260px;
+}
+
+.float-left {
+    float: left;
+}
+
+.float-right {
+    float: right;
+}
+
+.clear-both {
+    clear: both;
+}
+
+.side-center {
+    text-align: center;
+}
+.side-right {
+    text-align: right;
+}
+.side-left {
+    text-align: left;
+}
+
+.ui-link {
+    color: #2489CE;
+    font-weight: bold;
+}
+
+span.error {
+    color: #C00;
+    display: block;
+    margin-top: 5px;
+    margin-left: 0;
+    line-height: 25px;
+}
+
+.font-bold {
+    font-weight: bold;
+}
+
+.ui-header .ui-title, .ui-footer .ui-title {
+    margin: 0 50px;
+}
+
+.padding-left-5 { padding-left: 15px;}
+
+.padding-right-10 { padding-right: 10px;}
+.padding-right-1em { padding-right: 1em;}
+.padding-right-2em { padding-right: 2em;}
+
+.margin-top-3em{ margin-top: 3em;}
+.margin-top-10em{ margin-top: 10em;}
+.margin-top-15em{ margin-top: 15em;}
+
+.margin-top-15 {
+    margin-top: 15px;
+}
+
+.margin-bottom-1em{margin-bottom: 1em;}
+.margin-bottom-2em{margin-bottom: 2em;}
+
+.line-height-1-5em{
+    line-height: 1.5em;
+}
+.line-height-2em{
+    line-height: 2em;
+}
+
+.login-top {
+    height:300px;
+    position: relative;
+    background-image: -moz-linear-gradient(top, #064592, #ABB1BC);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#064592), to(#ABB1BC));
+}
+
+.nosimcard-top {
+    height:250px;
+    position: relative;
+    background-image: -moz-linear-gradient(top, #064592, #ABB1BC);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#064592), to(#ABB1BC));
+}
+
+.logo-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -75px;
+    margin-left: -75px;
+}
+
+.margin-top-20 {
+    margin-top: 20px;
+}
+
+.language {
+    cursor: pointer;
+}
+
+.selected {
+    color: #0E85DA;
+}
+
+.header {
+    background-color: #F0F0F0;
+    height: 64px;
+    line-height: 64px;
+}
+
+.vertical-middle {
+    vertical-align: middle;
+}
+.side-left .ui-title{
+    text-align: left;
+}
+.btn-title{
+    font-size: 16px;
+}
+.btn-sub-desc{
+    font-size: 12px;
+    color: #828282;
+}
+.ui-input-btn input.btn-color-blue{
+    background-color: 		#3388cc;
+    border-color:	 		#3388cc;
+    color: 					#fff;
+}
+#home_container .ui-listview > li p{
+    font-size: 1em;
+}
+
+#othersList .ui-checkbox {
+    margin: 0;
+}
+
+.ui-field-contain {
+    border: 0;
+}
+#signal_div{
+    width: 90px;
+    height: 60px;
+}
+.signal0{
+    background: url("../img/signal_0.png") no-repeat scroll -10px 0 transparent;
+    background-size: 90px 50px;
+}
+.signal1{
+    background: url("../img/signal_1.png") no-repeat scroll -10px 0 transparent;
+    background-size: 90px 50px;
+}
+.signal2{
+    background: url("../img/signal_2.png") no-repeat scroll -10px 0 transparent;
+    background-size: 90px 50px;
+}
+.signal3{
+    background: url("../img/signal_3.png") no-repeat scroll -10px 0 transparent;
+    background-size: 90px 50px;
+}
+.signal4{
+    background: url("../img/signal_4.png") no-repeat scroll -10px 0 transparent;
+    background-size: 90px 50px;
+}
+.signal5{
+    background: url("../img/signal_5.png") no-repeat scroll -10px 0 transparent;
+    background-size: 90px 50px;
+}
+.signal_none{
+    background: url("../img/signal_none.png") no-repeat scroll -10px 0 transparent;
+    background-size: 90px 50px;
+}
+
+
+@media (min-width: 28em) {
+    span.error {
+        margin-left: 22%;
+    }
+
+    .show-password-container span.error {
+        margin-left: 0;
+    }
+
+    .show-password-container {
+        float: left;
+        width: 78%;
+        box-sizing: border-box;
+    }
+
+    .show-password {
+        margin-top: 16px !important;
+    }
+}
+
+.ui-icon-logout:after {
+    background-image: url("../img/logout.png");
+}
+
+.ui-icon-editname:after {
+    background-image: url("../img/edit.png");
+}
+
+.menu-list a {
+    height: 37px;
+}
+
+.menu-list .middle {
+    line-height: 37px;
+}
+
+legend {
+    font-weight: bold;
+    font-size: 20px;
+    color: #3388cc;
+    margin-left: 16px;
+}
+
+#popupCoverage span  {
+    font-size: 14px;
+}
+
+.margin-left-16 {
+    margin-left: 16px;
+}
+
+/* 短信结束 */
+.sms-delete-div .ui-checkbox{
+    margin: 0;
+}
+.sms-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sms-content {
+    font-size: 0.75em;
+    font-weight: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#sms-list-header .ui-navbar li{
+}
+#sms-list-header .ui-navbar li a.ui-btn{
+    font-size: 16px;
+    line-height: 40px;
+    margin-left: 1em;
+}
+.ui-header .ui-btn.footer-btn-one-line, .ui-footer .ui-btn.footer-btn-one-line{
+    display: block;
+    margin: 10px;
+}
+.sms-header-title{
+    margin-left: 50px; line-height: 50px;
+}
+.ui-navbar li .ui-btn.sms-header-left-icon{
+    margin-top: 5px; display: inline-block;
+}
+.sms-new-count{
+    position: absolute; left: 55px; top: 7px; background-color: #CC0000; border-radius: 30px; display: inline-block; padding: 2px 8px; color: #fff;
+}
+
+.home-sms-count {
+    position: absolute; left: 68px; top: 12px; background-color: #CC0000; border-radius: 30px; display: inline-block; padding: 2px 8px; color: #fff;
+}
+
+.sms-draft-tag{
+    color: red;
+}
+.sms-desc:after{
+    content: ' | ';
+}
+.sms-chat-item{
+    clear: both;
+    float: left;
+    margin: 5px;
+    width: 100%;
+    position: relative;
+}
+.sms-chat-content{
+    max-width: 70%;
+    min-width: 55%;
+    padding: 10px;
+    -webkit-border-radius: .5em;
+    border-radius: .5em;
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: normal;
+    margin-bottom: 10px;
+}
+.chat-left .sms-chat-content{
+    background-color: #DCE8F6;
+    border: 1px solid #BECDDE;
+    float: left;
+    clear: both;
+}
+.chat-right .sms-chat-content{
+    background-color: #F6DCDD;
+    border: 1px solid #DEBDBD;
+    float: right;
+    clear: both;
+}
+.chat-left .sms-chat-end{
+    float: left;
+    clear: both;
+}
+.chat-right .sms-chat-end{
+    float: right;
+    clear: both;
+}
+.chat-left .sms-popup{
+    background: url("../img/sms_popup_left.png") no-repeat scroll 0 0 transparent;
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    width: 12px;
+    height: 12px;
+}
+.chat-right .sms-popup{
+    background: url("../img/sms_popup_right.png") no-repeat scroll 0 0 transparent;
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    width: 12px;
+    height: 12px;
+}
+/* 短信结束 */
+
+.break-word {
+    word-wrap: break-word;
+}
+
+hr {
+    margin-top: 10px;
+    margin-bottom: 0;
+    border: 1px solid #3388cc;
+}
+
+#frmName span.error, #formLogin span.error, #frmPIN span.error, #frmPUK span.error, #frmNetworkLock span.error {
+    margin-left: 0;
+}
+
+.important-prompt {
+    color: red;
+}
+
+#frmTrafficSetting span.error, #frmAdjust  span.error{
+    margin-left: 0;
+}
+
+.color-block {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+}
+
+.traffic-border {
+    border-left: 1px solid gainsboro;
+    border-right: 1px solid gainsboro;
+}
+
+.ui-btn-active:active {
+    background-color: #0E85DA !important;
+}
+
+.ui-btn-active.ui-state-disabled {
+    background-color: #0E85DA !important;
+}
+
+.margin-bottom-15 {
+    margin-bottom: 15px;
+}
+
+.show-password-container {
+    position: relative;
+}
+
+.show-password-container input[type=password] {
+    padding-right: 30px;
+}
+
+.show-password {
+    position: absolute;
+    right: 2px;
+    top: 0;
+    margin-top: 8px;
+    height: 22px;
+    width: 30px;
+    background-color: transparent;
+    background-image: url("../img/show_password_off.png");
+}
+
+.show-password-on {
+    background-image: url("../img/show_password_on.png");
+}
+
+.margin-left-20 {
+    margin-left: 20px;
+}
+
+.margin-right-20 {
+    margin-right: 20px;
+}
+
+#savePasswordLabel {
+    background-color: #F9F9F9;
+    border: 0;
+}
+
+#attachedDevices .ui-btn-icon-left:after, #attachedDevices .ui-btn-icon-right:after, #attachedDevices .ui-btn-icon-top:after, #attachedDevices .ui-btn-icon-bottom:after, #attachedDevices .ui-btn-icon-notext:after {
+    content: "";
+    position: absolute;
+    display: block;
+    width: 30px;
+    height: 30px;
+}
+
+.sms-icon {
+    margin-top: 10px;
+}
+
+#dialog a.ui-btn {
+    margin: 0;
+}
+
+.ui-footer .ui-btn {
+    font-size: 16px;
+}
+
+#sms-footer-delete li .ui-btn {
+    font-size: 16px;
+    border-width: 1px;
+}
+
+#sms-footer {
+    background-color: #FFFFFF;
+    border-top-color: #FFFFFF;
+}
+
+.ui-btn-active, .ui-btn-active:active {
+    background-color: #F6F6F6 !important;
+    border-color: #DDD !important;
+    color: #333 !important;
+}
+
+.ui-btn-active:hover {
+    background-color: #EDEDED !important;
+    border-color: #DDD !important;
+    color: #333 !important;
+}
+
+.ui-btn-active.ui-state-disabled {
+    opacity: 0.5 !important;
+    background-color: lightgray !important;
+}
+
+.ui-btn:focus {
+    box-shadow: none !important;
+}
+
+h1#title {
+    font-weight: bold;
+    font-size: 20px;
+    color: #3388cc;
+    margin-left: 16px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#dialog p {
+    margin-bottom: 0;
+}
+
+#dialog hr {
+    margin-top: 0;
+    margin-bottom: 0;
+    border: 1px solid #3388cc;
+}
+
+#trafficSwitchOn .ui-btn {
+    padding: 0.7em 0;
+}

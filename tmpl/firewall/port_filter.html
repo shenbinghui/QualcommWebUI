@@ -1,0 +1,386 @@
+<div class="content">
+<div class="main_left">
+<div id="settings_menu" class="menu_settings">
+    <ul>
+        <li class="nosub" id="quick_setup">
+            <a href="#quick_setting" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+            <span id="label_quick_setup" data-trans="left_menu_quicksetup"></span>
+            </a>
+        </li>
+        <li class="sub" id="dialup">
+            <span id="label_dialup" style='width: 230px; overflow: hidden; white-space: nowrap;' data-trans="left_menu_dialup"></span>
+            <ul >
+                <li id="mobileconnection">
+                    <a href="#dial_setting" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_mobile_connection" data-trans="left_menu_mobile_connection"></span>
+                    </a>
+                </li>
+                <li id="profilesmgr">
+                    <a href="#apn_setting" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_profile_management" data-trans="left_menu_profile_management"></span>
+                    </a>
+                </li>
+                <li id="mobilenetworksettings">
+                    <a href="#net_select" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_mobile_network_settings" data-trans="left_menu_network_settings"></span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li class="sub" id="internet" style="display: none;">
+            <span id="label_internet" style='width: 230px; overflow: hidden; white-space: nowrap;' data-trans="left_menu_dialup"></span>
+            <ul>
+                <li id="wifinetworks">
+                    <a href="wifinetworks.html" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_wifinetworks" data-trans="left_menu_dialup"></span>
+                    </a>
+                </li>
+                <li id="wifipriority">
+                    <a href="wifipriority.html" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_wifiPriority" data-trans="left_menu_dialup"></span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li class="sub" id="wlan">
+            <span id="label_wlan" style='width: 230px; overflow: hidden; white-space: nowrap;' data-trans="left_menu_wlan"></span>
+            <ul>
+                <li id="wlanbasicsettings">
+                    <a href="#wifi_main" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_wlan_basic_settings" data-trans="left_menu_wlan_basic"></span>
+                    </a>
+                </li>                
+                <li id="wlanadvanced">
+                    <a href="#wifi_advance" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_wlan_advanced_settings" data-trans="left_menu_wlan_advanced"></span>
+                    </a>
+                </li>
+                <li id="wlanmacfilter">
+                    <a href="#black_list" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_wlan_mac_filter" data-trans="left_menu_wlan_macfilter"></span>
+                    </a>
+                </li>
+
+                <li id="dhcp">
+                    <a href="#router_setting" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_dhcp" data-trans="left_menu_wlan_dhcp"></span>
+                    </a>
+                </li>    
+                <li id="dns" style="display: none;">
+                    <a href="dns.html" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_dns" data-trans="left_menu_wlan_dns_setting"></span>
+                    </a>
+                </li>
+                <li id="staticdhcp" style="display: none;">
+                    <a href="staticdhcp.html" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_staticdhcp" data-trans="left_menu_wlan_static_ip"></span>
+                    </a>
+                </li>
+                <li id="wps">
+                    <a href="#wps" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_wps" data-trans="wps"></span>
+                	</a>
+                </li>
+            </ul>
+        </li>
+        <li class="sub click" id="security">
+            <span id="label_security" style='width: 230px; overflow: hidden; white-space: nowrap;' data-trans="left_menu_security"></span>
+            <ul >
+                <li id="pincodemanagement">
+                    <a href="#pin_management" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_pin_code_management" data-trans="left_menu_security_pin_management"></span>
+                    </a>
+                </li>  
+                <li id="lanipfilter" class="subClick">
+                    <a href="#port_filter" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_lan_ip_filter" data-trans="left_menu_security_ipfilter"></span>
+                    </a>
+                </li>
+                <li id="virtualserver">
+                    <a href="#port_map" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_virtual_server" data-trans="left_menu_security_virtual_server"></span>
+                    </a>
+                </li>
+
+            </ul>
+        </li>
+			
+        <li class="sub" id="system">
+            <span id="label_system" style='width: 230px; overflow: hidden; white-space: nowrap;' data-trans="left_menu_system"></span>
+            <ul>
+                <li id="deviceinformation">
+                    <a href="#deviceinformation" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_device_information" data-trans="left_menu_system_device_info"></span>
+                    </a>
+                </li>     
+                <li id="modifypassword">
+                    <a href="#modifypassword" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_modify_password" data-trans="left_menu_system_modify_pwd"></span>
+                    </a>
+                </li>
+                <li id="devicerestore">
+                    <a href="#devicerestore" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_restore_defaults" data-trans="left_menu_system_restore"></span>
+                    </a>
+                </li>
+                <li id="reboot">
+                    <a href="#reboot" style='width: 230px; overflow: hidden; white-space: nowrap;'>
+                    <span id="label_reboot" data-trans="left_menu_system_reboot"></span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</div>
+</div>
+
+
+<div class="content_right">	
+	<div class="maintitle">
+        <h1 data-trans="left_menu_security_ipfilter"></h1>
+    </div>
+     <div class="main_content">
+     	<form id="filterBasicForm">
+        <div>
+            <div class="row form-group">
+                <label class="col-xs-3 side-right" data-trans="port_filter_enabled"></label>
+                <div class="col-xs-6">
+                    <div class="row">
+                        <div class="col-xs-4">
+                            <input type="radio" name="filterGrp" id="filterEnable" data-bind="checked: portFilterEnable" value="1"/>
+                            <label for="filterEnable" data-trans="enable"></label>
+                        </div>
+                        <div class="col-xs-4">
+                            <input type="radio" name="filterGrp" id="filterDisable" data-bind="checked: portFilterEnable" value="0"/>
+                            <label for="filterDisable" data-trans="disable"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row form-group" data-bind="visible: portFilterEnable() == '1' ">
+                <label class="col-xs-3 side-right" data-trans="default_policy"></label>
+                <div class="col-xs-6">
+                    <div class="row">
+                        <div class="col-xs-4">
+                            <input type="radio" name="defaultPolicyGrp" id="defaultPolicyAccept" data-bind="checked: defaultPolicy, event: {click: policyChangeHandler}" value="0"/>
+                            <label for="defaultPolicyAccept" data-trans="accepted"></label>
+                        </div>
+                        <div class="col-xs-4">
+                            <input type="radio" name="defaultPolicyGrp" id="defaultPolicyDrop" data-bind="checked: defaultPolicy, event: {click: policyChangeHandler}" value="1"/>
+                            <label for="defaultPolicyDrop" data-trans="dropped"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="apply_button">
+        	<label id="submit_filterBasicForm" data-bind="click: submit_filterBasicForm">
+            	<span class="button_wrapper"><span class="button_left"><span class="button_right"><span class="button_center" data-trans="apply"></span></span></span></span>
+        	</label>
+    	</div>
+	    	
+        <div class="form-note" style="display: none;">
+            <div class="notes-title">&nbsp;</div>
+            <ul class="notes-content">
+                <li data-trans="default_policy_note"></li>
+                <li data-trans="default_policy_note_filter"></li>
+            </ul>
+        </div>
+    </form>
+    <div data-bind="visible: oriPortFilterEnable() == '1' && portFilterEnable() == '1' ">
+        <form id="portFilterForm">
+            <div class="form-title">
+                <h2 data-trans="port_filter_setting"></h2>
+            </div>
+            <div>
+                <div class="row form-group" data-bind="visible: ipv6Support">
+                    <label class="col-xs-3 side-right" data-trans="filter_ip_setting"></label>
+                    <div class="col-xs-6">
+                        <div class="row">
+                            <div class="col-xs-4">
+                                <input type="radio" name="ipTypeGrp" id="filterIpv4" data-bind="checked: ipType, event: {click: ipTypeChangeHandler}" value="ipv4"/>
+                                <label for="filterIpv4" data-trans="filter_ipv4"></label>
+                            </div>
+                            <div class="col-xs-4">
+                                <input type="radio" name="ipTypeGrp" id="filterIpv6" data-bind="checked: ipType, event: {click: ipTypeChangeHandler}" value="ipv6"/>
+                                <label for="filterIpv6" data-trans="filter_ipv6"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <label class="col-xs-3 side-right" for="txtMacAddress" data-trans="mac_address"></label>
+                    <div class="col-xs-9">
+                        <div class="row">
+                            <div class="col-xs-6">
+                                <input type="text" name="txtMacAddress" id="txtMacAddress" data-bind="value: macAddress"  maxlength="17" class="input_style"/>
+                            </div>
+                            <label class="col-xs-6" data-trans="macExam" id="macExamLabel"></label>
+                        </div>
+                    </div>
+                    <div class="col-xs-9 col-md-offset-3" id="macErrorDiv"></div>
+                </div>
+                <div data-bind="visible: ipType() =='ipv4'">
+                    <div class="row form-group">
+                        <label class="col-xs-3 side-right" for="txtSourceIpAddress" data-trans="source_ip_address"></label>
+                        <div class="col-xs-6">
+                            <input type="text" name="txtSourceIpAddress" id="txtSourceIpAddress" data-bind="value: sourceIpAddress"  maxlength="15" class="input_style"/>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3 side-right" for="txtDestIpAddress" data-trans="dest_ip_address"></label>
+                        <div class="col-xs-6">
+                            <input type="text" name="txtDestIpAddress" id="txtDestIpAddress" data-bind="value: destIpAddress"  maxlength="15" class="input_style"/>
+                        </div>
+                    </div>
+                </div>
+                <div data-bind="visible: ipType() =='ipv6'">
+                    <div class="row form-group">
+                        <label class="col-xs-3 side-right" for="txtSourceIpv6Address" data-trans="source_ipv6_address"></label>
+                        <div class="col-xs-6">
+                            <input type="text" name="txtSourceIpv6Address" id="txtSourceIpv6Address" data-bind="value: sourceIpv6Address" class="input_style"/>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3 side-right" for="txtDestIpv6Address" data-trans="dest_ipv6_address"></label>
+                        <div class="col-xs-6">
+                            <input type="text" name="txtDestIpv6Address" id="txtDestIpv6Address" data-bind="value: destIpv6Address" class="input_style"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <label class="col-xs-3 side-right" for="protocol" data-trans="protocol"></label>
+                    <div class="col-xs-6">
+                        <select id="protocol" data-transid="protocol" data-bind="options: modes, value: selectedMode, optionsText: transOption('protocol'), optionsValue: 'value', event:{ change: protocolChangeHandler}" class="input_select"></select>
+                    </div>
+                </div>
+                <!--根据protocol显示或隐藏-->
+                <div id="portRangeArea" data-bind="visible: selectedMode() != 'ICMP' && selectedMode() != 'None' ">
+                    <div class="row form-group">
+                        <label class="col-xs-3 side-right" for="txtSourcePortStart" data-trans='source_port_range'></label>
+                        <div class="col-xs-9">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <input id='txtSourcePortStart' name="txtSourcePortStart" type="text" data-bind="value: sourcePortStart"
+                                           class="input_style" maxlength="5"/>
+                                </div>
+                                <div class="col-xs-2 text-right">
+                                    -
+                                </div>
+                                <div class="col-xs-3">
+                                    <input id='txtSourcePortEnd' name="txtSourcePortEnd" type="text" data-bind="value: sourcePortEnd"
+                                           class="input_style" maxlength="5"/>
+                                </div>
+                                <label class="col-xs-4 text-center" id='sourceRangeLabel'>(1~65535)</label>
+                            </div>
+                        </div>
+                        <div class="col-xs-9 col-md-offset-3" id="sourcePortErrorDiv"></div>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-3 side-right" for="txtDestPortStart" data-trans='dest_port_range'></label>
+                        <div class="col-xs-9">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <input id='txtDestPortStart' name="txtDestPortStart" type="text" data-bind="value: destPortStart"  class="input_style" maxlength="5"/>
+                                </div>
+                                <div class="col-xs-2 text-right">
+                                    -
+                                </div>
+                                <div class="col-xs-3">
+                                    <input id='txtDestPortEnd' name="txtDestPortEnd" type="text" data-bind="value: destPortEnd"
+                                           class="input_style" maxlength="5"/>
+
+                                </div>
+                                <label class="col-xs-4 text-center" id='destRangeLabel'>(1~65535)</label>
+                            </div>
+                        </div>
+                        <div class="col-xs-9 col-md-offset-3" id="destPortErrorDiv"></div>
+                    </div>
+                </div>
+
+                <div class="row form-group">
+                    <label class="col-xs-3 side-right" data-trans="port_filter_action"></label>
+                    <div class="col-xs-6">
+                        <div class="row">
+                            <div class="col-xs-4">
+                                <input type="radio" name="portFilterActionGrp" id="portFilterAccept" data-bind="checked: portFilterAction" value="Accept"/>
+                                <label for="portFilterAccept" data-trans="filter_accept"></label>
+                            </div>
+                            <div class="col-xs-4">
+                                <input type="radio" name="portFilterActionGrp" id="portFilterDrop" data-bind="checked: portFilterAction" value="Drop"/>
+                                <label for="portFilterDrop" data-trans="filter_drop"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <label class="col-xs-3 side-right" for="txtComment" data-trans="comment"></label>
+                    <div class="col-xs-6">
+                        <input type="text" name="txtComment" id="txtComment" data-bind="value: comment" class="input_style" maxlength="32"/>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="apply_button">
+	        	<label id="submit_portFilterForm" data-bind="click: submit_portFilterForm">
+	            	<span class="button_wrapper"><span class="button_left"><span class="button_right"><span class="button_center" data-trans="apply"></span></span></span></span>
+	        	</label>
+	    	</div>
+   
+            <div class="form-note" style="display: none;">
+                <div class="notes-title">&nbsp;</div>
+                <ul class="notes-content">
+                    <li data-trans="port_filter_note_mac_address"></li>
+                    <li data-trans="port_filter_note_source_ip_address"></li>
+                    <li data-trans="port_filter_note_dest_ip_address"></li>
+                    <li data-trans="port_filter_note_protocol"></li>
+                    <li data-trans="port_filter_note_source_port_range"></li>
+                    <li data-trans="port_filter_note_dest_port_range"></li>
+                    <li data-trans="port_filter_note_action"></li>
+                    <li data-trans="port_filter_note_comment"></li>
+                    <li data-trans="port_filter_note_info"></li>
+                    <li data-trans="rule_max_note_v4v6" data-bind="visible: ipv6Support"></li>
+                    <li data-trans="rule_max_note" data-bind="visible: !ipv6Support()"></li>
+                </ul>
+            </div>
+        </form>
+        <form id="portFilterListForm">
+            <div class="form-title">
+                <h2 data-trans="port_filter_list"></h2>
+            </div>
+            <div>
+                <div>
+                    <div id="portFilters" class="fixTableScroll" data-bind="simpleGrid: gridTemplate"></div>
+                </div>
+            </div>
+
+
+			<div class="apply_button">
+	        	<label id="submit_portFilterListForm" data-bind="click: submit_portFilterListForm, enable: gridTemplate.checkedCount() > 0">
+	            	<span class="button_wrapper"><span class="button_left"><span class="button_right"><span class="button_center" data-trans="delete"></span></span></span></span>
+	        	</label>
+	    	</div>
+
+            <!-- ko if: oriDefaultPolicy() == '0' -->
+            <div class="form-note" style="display: none;">
+                <div class="notes-title">&nbsp;</div>
+                <ul class="notes-content">
+                    <li data-trans="filter_accept_note"></li>
+                </ul>
+            </div>
+            <!-- /ko -->
+            <!-- ko if: oriDefaultPolicy() == '1' -->
+            <div class="form-note" style="display: none;">
+                <div class="notes-title">&nbsp;</div>
+                <ul class="notes-content">
+                    <li data-trans="filter_drop_note"></li>
+                </ul>
+            </div>
+            <!-- /ko -->
+        </form>
+    </div>
+     </div>
+ </div>
+</div>

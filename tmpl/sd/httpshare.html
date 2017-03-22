@@ -1,0 +1,337 @@
+<div class="dialog" id="upload_dialog" style="left: 373.5px; top: 757.5px; display: none;">
+    <div class="upload_dialog_top"></div>
+    <div class="upload_dialog_content">
+        <div class="upload_dialog_header">
+            <span class="dialog_header_left">Upload File</span>
+            <span class="dialog_header_right">
+            		<a href="javascript:void(0);" title="close" class="dialog_close_btn" tabindex="-1"><img src="img_mifi/dialog_close_btn.png" alt="" data-bind="click:upload_dialog_cancel"></a>
+            </span>
+        </div>
+
+        <div class="upload_dialog_table">
+            <iframe name="iframe_upload_file" style="display:none;"></iframe>
+            <table width="580" cellpadding="0" cellspacing="0">
+                <tbody>
+                <tr height="32">
+                    <td width="185" height="42" align="center">Upload File</td>
+                    <td width="15"></td>
+                    <td class="td_upload_file">
+                        <form name="tF0" id="upload_file_form" method="post" action="/cgi-bin/ajax_get.cgi?which_ajax=api/sdcard/fileupload" enctype="multipart/form-data" encoding="multipart/form-data" target="iframe_upload_file">
+                            <input type="hidden" name="cur_path" id="cur_path" value="" tabindex="-1">
+                            <input type="hidden" name="page" id="page" value="sdcardsharing.html" tabindex="-1">
+                            <input type="file" name="uploadfile" id="fileField2" size="40" class="upload_file" contenteditable="false" onfocus="setInputValue()" onchange="fileFieldChanged()" value="" tabindex="-1">
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="upload_dialog_table_bottom">
+            <div class="dialog_table_r">
+		            <span class="button_wrapper disable_btn" id="pop_Upload" onclick="fileUploadSubmitClickHandler()">
+				            <span class="button_left">
+				            		<span class="button_right">
+				            				<span class="button_center">Upload</span>
+				            		</span>
+		            		</span>
+		            </span>&nbsp;&nbsp;&nbsp;&nbsp;
+		            <span class="button_wrapper pop_cancel" id="pop_cancel">
+		            		<span class="button_left">
+		            				<span class="button_right">
+		            						<span class="button_center" data-trans="cancel" data-bind="click:upload_dialog_cancel"></span>
+		            				</span>
+		            		</span>
+		            </span>
+            </div>
+        </div>
+    </div>
+    <div class="upload_dialog_bottom"></div>
+</div>
+	
+<form id="sd_form">
+        <div class="content">
+        	<h3><div class ="sd_title_share" style="color:rgb(0,102,204)" data-trans="sdcard_share"></div></h3>
+            <div class="row" data-bind="visible: sdStatus() == 2">
+                <label class="col-xs-3"></label>
+                <div class="form-note col-xs-8 sd_invalid_notes" style="margin-top: 0;">
+                    <span data-trans="sd_card_status_info_2_reason"></span>
+                    <ul class="notes-content">
+                        <li data-trans="sd_card_status_info_2_reason_1"></li>
+                        <li data-trans="sd_card_status_info_2_reason_2"></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row form-group" data-bind="visible: sdStatus() != 0">
+                <label class="col-xs-4" data-trans="sd_card_mode" style="left:150px"></label>
+                <div class="col-xs-8">
+                    <div class="row">
+                        <div class="">
+                            <input type="radio" name="mode_set" id="mode_set_usb" data-bind="checked: selectedMode" value="1"/>
+                            <label for="mode_set_usb" data-trans="sd_card_share_usb_mode"></label>
+                        </div>
+                        <div class="">
+                            <input type="radio" name="mode_set" id="mode_set_http" data-bind="checked: selectedMode" value="0"/>
+                            <label for="mode_set_http" data-trans="sd_card_share_http_share_mode"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div data-bind="visible: selectedMode() == 0 && sdStatus() != 0">
+                <div class="row form-group">
+                    <label class="col-xs-4" data-trans="sd_card_share_setting" style="left:150px"></label>
+                    <div class="col-xs-8">
+                        <div class="row">
+                            <div class="">
+                                <input type="radio" name="share_enable" id="share_enable_Enable" data-bind="checked: selectedShareEnable" value="1"/>
+                                <label for="share_enable_Enable" data-trans="enable"></label>
+                            </div>
+                            <div class="">
+                                <input type="radio" name="share_enable" id="share_enable_Disable" data-bind="checked: selectedShareEnable" value="0"/>
+                                <label for="share_enable_Disable" data-trans="disable"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <h2><div class ="sd_title_set" style="color:rgb(0,102,204);font-size: 12pt;" data-trans="net_share_set"></div></h2>
+                <div data-bind="visible: selectedShareEnable() == 1">
+                    <div class="row form-group">
+                    	 <label class="col-xs-x" data-trans="sd_card_available_space"></label>
+                    	  <label class="col-xs-x" data-trans="sd_card_all_space"></label>
+                    <span class="col-xs-used" id="sd_volumn_used"></span>
+                    <span class="col-xs-all" id="sd_volumn_total"></span>
+                        <div class="col-xs-x">
+                            <div class="agile_progress_bar">
+                                <div id="agile_used_volume" class="agile_used_bar">
+                                    <span class="usedspace_bar_left"></span>
+                                </div>
+                                <div id="agile_threshold" class="agile_threshold_bar">
+                                    <span class="usedspace_bar_left"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <label class="col-xs-4" data-trans="sd_card_access_type" style="left:150px"></label>
+                        <div class="col-xs-8">
+                            <div class="row">
+                                <div class="">
+                                    <input type="radio" name="access_type" id="sd_card_read_write" data-bind="checked: selectedAccessType" value="1"/>
+                                    <label for="sd_card_read_write" data-trans="sd_card_read_write"></label>
+                                </div>
+                                <div class="">
+                                    <input type="radio" name="access_type" id="sd_card_readonly" data-bind="checked: selectedAccessType" value="0"/>
+                                    <label for="sd_card_readonly" data-trans="sd_card_readonly"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-4" data-trans="sd_card_file_to_share" style="left:150px"></label>
+                        <div class="col-xs-8">
+                            <div class="row">
+                                <div class="">
+                                    <input type="radio" name="file_to_share" id="sd_card_entire_sd_card" data-bind="checked: selectedFileToShare, click: fileToShareClickHandle" value="1"/>
+                                    <label for="sd_card_entire_sd_card" data-trans="sd_card_entire_sd_card"></label>
+                                </div>
+                                <div class="">
+                                    <input type="radio" name="file_to_share" id="sd_card_custom_setting" data-bind="checked: selectedFileToShare, click: fileToShareClickHandle" value="0"/>
+                                    <label for="sd_card_custom_setting" data-trans="sd_card_custom_setting"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <label class="col-xs-4" for="path_to_share" data-trans="sd_card_path_to_share" style="left:150px"></label>
+                        <div class="col-xs-5">
+                            <input type="text" id="path_to_share" name="path_to_share" data-bind="value: pathToShare, disable: selectedShareEnable() == 0 || selectedFileToShare() == 1" maxlength="200" class="form-control required"/>
+                        </div>
+                    </div>
+                    <div class="row" data-bind="visible: isInvalidPath">
+                        <span class="col-xs-4"></span>
+                        <div class="col-xs-5">
+                            <span class="colorRed" data-trans="sd_share_path_is_invalid"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-button" data-bind="visible: sdStatus() != 0">
+                <!--input type="submit" class="btn btn-primary" data-trans="apply" data-bind="disable: disableApplyBtn()"-->
+                <div class="sdcard_sharing_apply">
+ 				<span class="button_left">
+					<span class="button_right">
+						<span class="button_center" type="submit" data-trans="apply" data-bind="disable: disableApplyBtn(),click:save"></span>
+					</span>
+				</span>
+				</div>
+            </div>
+ 			<h2><div class ="sd_title " data-trans="sd_card_prompt" style=" text-align:center;font-size:12px"></div></h2>
+        </div>
+    </form>			
+<div id="httpshare_form">
+	<div class="form-body">
+		<div class="content">
+            <!--div class="row margin-top-20">
+                <div class="col-xs-9">
+                    <label data-trans="sd_path" class="col-xs-2 margin-top-5"></label>
+					<div class="col-xs-5">
+						<input type="text" class="form-control" value="" id="sd_path" disabled="disabled" noAction="true"/>
+					</div>
+
+                </div>
+            </div-->
+            <h3 style="color:rgb(0,0,0);padding-top:90px;padding-left:20px;font-size: 12pt;" data-trans="sd_card_share_list"></h3>
+            <div class="icon_settings_sd">
+                <!--div class="button_wrapper disable_btn"-->
+                <span id="delete_file_button" class="button_wrapper disable_btn">
+ 					<span class="button_left">
+						<span class="button_right">
+							<span class="button_center" type="button" data-trans="delete" class="btn btn-primary" onclick="deleteBtnClickHandler();"></span>
+						</span>
+					</span>
+				</span>	
+				<span id="backBtnLi" class="button_wrapper disable_btn">
+					<span class="button_left">
+						<span class=" button_right">
+							<span class="button_center"  type="button" data-trans="sd_back_button" class="btn btn-primary" onclick="backFolder();"></span>
+						</span>
+					</span>
+				</span>	
+				<!--span id="fileUploadApplyBtn" class="button_wrapper">
+					<span class="button_left">
+						<span class="button_right">
+							<span class="button_center" type="button" data-trans="upload" class="btn btn-primary" onclick="fileUploadSubmitClickHandler();"></span>
+						</span>
+					</span>
+				</span-->
+                <span id="test_shenbh" class="button_wrapper">
+					<span class="button_left">
+						<span class="button_right">
+							<span  class="button_center" type="button" data-trans="upload" class="btn btn-primary" onclick="upLoad2SdCardBtn();"></span>
+						</span>
+					</span>
+				</span>
+				<span id="newFolderBtnLi" class="button_wrapper">
+					<span class="button_left">
+						<span class="button_right">
+							<span  class="button_center" type="button" data-trans="sd_new_folder" class="btn btn-primary" onclick="openCreateNewFolderClickHandler();"></span>
+						</span>
+					</span>
+				</span>
+
+                <!--/div-->
+            </div>
+            <div class="error_message" data-trans="sd_error_message"></div>
+            <div class="micro_sd_add"><pre>/</pre></div>
+			<div id="fileControlSection" class="margin-top-10 row" style="margin-left:40px">
+				<ul class="row">
+					<!--li id="rootBtnLi" onclick="enterFolder('');" class="cursor-pointer marginleft5">
+						<img class="sdcard_back_img" src="./img/backhome.jpg"/>
+						<span data-trans="root"></span>
+					</li-->
+					<!--li id="backBtnLi" onclick="backFolder();" class="cursor-pointer marginleft5">
+						<img class="sdcard_back_img" src="./img/back.jpg"/>
+						<span data-trans="back"></span>
+					</li-->
+					<!--li id="newFolderBtnLi" onclick="openCreateNewFolderClickHandler();" class="cursor-pointer marginleft5">
+						<img class="hand_cursor_img" src="./img/new.jpg"/>
+						<span data-trans="new"></span>
+					</li-->
+					<li id="createNewFolderLi" style="display: none;">
+						<div class="col-xs-new row margin-right-10">
+
+							<input class="form-control" type="text" name="newFolderName" id="newFolderName" maxlength="25"/>
+						</div>
+						<input type="button" id="createNewFolderBtn" data-trans="create" class="btn btn-primary" onclick="createNewFolderClickHandler();"/>
+						<input type="button" id="cancelCreateNewFolderBtn" data-trans="cancel" class="btn btn-primary" onclick="cancelCreateNewFolderClickHandler();"/>
+						<div id="createNewFolderErrorLabel" class="colorRed"></div>
+					</li>
+				</ul>
+			</div>
+			<div id="fileListSection">
+				<table class="table table-striped table-hover" style="width: 86%">
+					<thead>
+						<tr>
+							<th width="40" class="sd_guest_hide_th">
+								<p id="fileList-checkAll" target="fileList_container" class="checkbox checkboxToggle">
+									<input id="checkbox-all" type="checkbox"/>
+								</p>
+							</th>
+							<th width="20"></th>
+							<th data-trans="sd_name" width="170"></th>
+							<th data-trans="sd_rename" class="sd_guest_hide_th"></th>
+							<th data-trans="download"></th>
+							<th data-trans="sd_file_size" ></th>
+							<th data-trans="sd_update_time" width="150"></th>
+						</tr>
+					</thead>
+					<tbody id="fileList_container"></tbody>
+				</table>
+			</div>
+			<div id="fileListButtonSection">
+				<div class="pager ko-grid-pageLinks"></div>
+                <div class="form-button">
+                    <!--input type="button" data-trans="delete" id="delete_file_button" class="btn btn-primary " onclick="deleteBtnClickHandler();"/-->
+                <!--div class="sdcard_sharing_apply">
+ 					<span class="button_left">
+						<span class="button_right">
+							<span class="button_center" type="button" data-trans="delete" id="delete_file_button" class="btn btn-primary " onclick="deleteBtnClickHandler();"></span>
+						</span>
+					</span>
+				</div-->
+					<input type="button" data-trans="back_to_login" id="go_to_login_button" class="btn btn-primary hide" onclick="gotoLogin();"/>
+                </div>
+			</div>
+            <!--delete by shenbh 20160418-->
+			<!--<div id="uploadSection">-->
+				<!--<iframe id="fileUploadIframe" name="fileUploadIframe" scrolling="no" frameborder="0" width="0" height="0" style="height:0px;width:0px;"></iframe>-->
+				<!--<form method="post" name="fileUploadForm" id="fileUploadForm" action="" enctype="multipart/form-data" target="fileUploadIframe">-->
+                    <!--<input type="hidden" name="path_SD_CARD_time" id="path_SD_CARD_time" value=""/>-->
+                    <!--<input type="hidden" name="path_SD_CARD_time_unix" id="path_SD_CARD_time_unix" value=""/>-->
+					<!--<input id="fileField" name="filename" maxlength="200" type="file" dir="ltr"/>-->
+					<!--<div class="fileUploadDiv">-->
+						<!--<input data-trans="upload" id="fileUploadApplyBtn" name="fileUploadApplyBtn" type="button" class="btn btn-primary margin-left-5 margin-top-2" onclick="fileUploadSubmitClickHandler();"/>-->
+					<!--</div>-->
+                    <!--<div class="clear"></div>-->
+				<!--</form>-->
+			<!--</div>-->
+		</div>
+	</div>
+</div>
+
+	
+	
+	
+<script type="text/x-jquery-tmpl" id="sdFileItemTmpl">
+{{each(i, item) data }}
+<tr class="${trClass}">
+	{{if readwrite}}<td align="center"><p class="checkbox"><input type="checkbox" target="fileList-checkAll" value="${fileName}"/></p></td>{{/if}}
+	<td {{if fileType=='folder'}}class="cursor-pointer folderTd" filename='${fileName}'{{/if}}><span class="mini-icon ${fileType==''?'':'icon-'+fileType}"></span></td>
+	<td style="width:170px;" {{if fileType=='folder'}}class="cursor-pointer folderTd" filename='${fileName}'{{/if}}>${replaceSpaceWithNbsp(fileName)}</td>
+	{{if readwrite}}<td align='center'><a href="javascript: void(0)" filename='${fileName}' class="fileRename" data-trans='sd_rename'></a></td>{{/if}}
+	<td align='center'>{{if fileType!='folder'}}<a href="${filePath}" filelocal="${filePath}" target="_blank" class="mini-icon icon-download"></a>{{/if}}</td>
+	<td align='center'>${fileSize}</td>
+	<td align='center'>${lastUpdateTime}</td>
+</tr>
+{{/each}}
+</script>
+<script type="text/x-jquery-tmpl" id="pagerTmpl">
+{{each(i, item) data.pagers }}
+	{{if isPrev}}
+        {{if pageNum==0}}
+	        <a href="javascript:void(0)" class="ko-grid-pager-disabled" data-trans="prev_page" onclick="javascript:void(0)"></a>
+        {{else}}
+            <a href="javascript:void(0)" data-trans="prev_page" onclick="pagerItemClickHandler('${pageNum}')"></a>
+        {{/if}}
+	{{else isDot}}
+	<span>...</span>
+	{{else isNext}}
+        {{if pageNum - 1==data.total}}
+            <a href="javascript:void(0)" class="ko-grid-pager-disabled" data-trans="next_page" onclick="javascript:void(0)"></a>
+        {{else}}
+            <a href="javascript:void(0)" data-trans="next_page" onclick="pagerItemClickHandler('${pageNum}')"></a>
+        {{/if}}
+	{{else}}
+	<a href="javascript:void(0)" class="${isActive?'ko-grid-pager-selected':''}" onclick="pagerItemClickHandler('${pageNum}')">${pageNum}</a>
+	{{/if}}
+{{/each}}
+
+</script>

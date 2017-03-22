@@ -1,0 +1,74 @@
+<form id="sntpForm">
+<div class="form-body">
+    <div class="form-title">SNTP</div>
+    <div class="content">
+		<div class="row-fluid">
+			<label class="span3 side-right" data-trans='local_current_time'></label>
+			<span class="span3" data-bind="text: localTime"></span>
+			<span>&nbsp;</span>
+			<span id="weekday" data-bind="text: day"></span>
+		</div>
+		<div class="row-fluid">
+			<label class="span3 side-right" data-trans='time_set_mode' for="sntpSetTimeMode"></label>
+			<div class="span9">
+				<select id="sntpSetTimeMode" data-transid="time_set_time" data-bind="options: timeSetModes, value: currentMode, optionsText: transOption('time_set_time'), optionsValue: 'value', event:{change: changeSetTimeMode}"></select>
+			</div>					
+		</div>
+		<div id="manualSetTime" data-bind="visible: isManualSetTime">
+			<div class="row-fluid">
+				<label class="span3 side-right" data-trans='time_set_time_manual'></label>
+				<div class="span9">
+					<select id="manualYear" data-bind="options: years, value: currentYear, optionsText: 'text', optionsValue: 'value', event:{change: initDateList}"></select> 
+					<label for="manualYear" data-trans="year"></label>
+					<select id="manualMonth" data-bind="options: months, value: currentMonth, optionsText: 'text', optionsValue: 'value', event: {change: initDateList}"></select> 
+					<label for="manualMonth" data-trans="month"></label>
+					<select id="manualDate" data-bind="options: dates, value: currentDate, optionsText: 'text', optionsValue: 'value'"></select> 
+					<label for="manualDate" data-trans="date"></label>
+					<select id="manualHour" data-bind="options: hours, value: currentHour, optionsText: 'text', optionsValue: 'value'"></select> 
+					<label for="manualHour" data-trans="hour"></label>
+					<select id="manualMinute" data-bind="options: minutes, value: currentMinute, optionsText: 'text', optionsValue: 'value'"></select> 
+					<label for="manualMinute" data-trans="minute"></label>
+				</div>
+			</div>	
+		</div>
+		<div id="autoSntpTime" data-bind="visible: isAutoSntpTime">
+			<div class="row-fluid">
+				<label class="span3 side-right" data-trans='stnp_server1' for="sntp_server1_select"></label>
+				<div class="span9">
+					<select id="sntp_server1_select" data-bind="options: serverList, value: currentServer0, optionsText: 'text', optionsValue: 'value', event: {change: changeServerSelect}"></select>
+					<input type="text" id="sntp_other_server0" name="sntp_other_server0" data-bind="value:customServer0, visible:isOther0" class="required"/>
+				</div>
+			</div>
+			<div class="row-fluid">
+				<label class="span3 side-right" data-trans='stnp_server2' for="stnp_server2_select"></label>
+				<div class="span9">
+					<select id="stnp_server2_select" data-bind="options: serverList, value: currentServer1, optionsText: 'text', optionsValue: 'value', event: {change: changeServerSelect}"></select>
+					<input type="text" id="sntp_other_server1" name="sntp_other_server1"  data-bind="value:customServer1, visible:isOther1" class="required"/>
+				</div>
+			</div>
+			<div class="row-fluid">
+				<label class="span3 side-right" data-trans='stnp_server3' for="stnp_server3_select"></label>
+				<div class="span9">
+					<select id="stnp_server3_select" data-bind="options: serverList, value: currentServer2, optionsText: 'text', optionsValue: 'value', event: {change: changeServerSelect}"></select>
+					<input type="text" id="sntp_other_server2" name="sntp_other_server2" data-bind="value:customServer2, visible:isOther2" class="required"/>
+				</div>
+			</div>
+			<div class="row-fluid">
+				<label class="span3 side-right" data-trans='time_zone' for="time_zone_select"></label>
+				<div class="span9">
+					<select id="time_zone_select" data-bind="options: timeZones, value: currentTimeZone, optionsText: 'text', optionsValue: 'value'"></select>
+				</div>
+			</div>
+			<div class="row-fluid">
+				<label class="span3 side-right" data-trans='daylight_saving_time' for="daylight_saving_time_select"></label>
+				<div class="span9">
+					<select id="daylight_saving_time_select" data-transid="daylightsave" data-bind="options: daylightSaves, value: currentDaylightSave, optionsText: transOption('daylightsave'), optionsValue: 'value'"></select>
+				</div>
+			</div>			
+		</div>		
+	</div>
+	<div class="form-buttons">
+		<input type="submit" data-bind="" class="btn-1 btn-primary" data-trans="apply"/>
+	</div>
+</div>
+</form>

@@ -1,0 +1,4096 @@
+define(["underscore", "jquery", "config/config"], function (m, $, i) {
+	var j,	l,	J,	K,	L,	M,	N,	k,	O,	P,	Q,	C,	R,	batteryStatus,	S,	T,	U,	V,	W,
+	E,	v,	w,	X,	x,	t,	F,	p,	Y,	Z,	$,	aa,	ba,	G,	q,	ca,	da,	ea;
+	
+		/**
+	 * Ajax异步调用
+	 * @method asyncRequest
+	 * @param {Object} params json参数对象
+	 * @param {Function} successCallback 成功回调函数
+	 * @param {Function} errorCallback 失败回调函数
+	 * @param {Boolean} isPost 是否为post方法
+	 */
+	function asyncRequest(params, successCallback, errorCallback, isPost) {
+		ajaxRequest(params, successCallback, errorCallback, !0, isPost);
+	}
+	
+		/**
+	 * Ajax异步调用
+	 * @method ajaxRequest
+	 * @param {Object} params json参数对象
+	 * @param {Function} successCallback 成功回调函数
+	 * @param {Function} errorCallback 失败回调函数
+	 * @param {Boolean} async 是否为异步方法
+	 * @param {Boolean} isPost 是否为post方法
+	 */
+	function ajaxRequest(params, successCallback, errorCallback, async, isPost) {
+		var result = null;
+		if (params.isTest) {
+			result = simulate.simulateRequest(params, successCallback, errorCallback, async, isPost);
+			if (async) {
+				setTimeout(function () {
+					successCallback(result)
+				}, getRandomInt(120) + 50);
+				return
+			}
+			return result
+		}
+		$.ajax({
+			type : isPost ? "POST" : "GET",
+			url : isPost ? "/goform/goform_set_cmd_process" : params.cmd ? "/goform/goform_get_cmd_process" : "/goform/goform_set_cmd_process",
+			data : params,
+			dataType : "json",
+			async : !!async,
+			cache : !1,
+			error : function (data) {
+				async ? errorCallback(data) : 200 == data.status && (result = jQuery.parseJSON("(" + data.responseText + ")"))
+			},
+			success : function (data) {
+				async ? successCallback(data) : result = data
+			}
+		});
+		if (!async)
+			return result
+	}
+	/**
+	 * doStuff业务处理函数
+	 * @method doStuff
+	 * @param {Object} params json参数对象
+	 * @param {Object} result 错误对象
+	 * @param {Function} prepare 数据准备函数
+	 * @param {Function} dealMethod 结果适配函数
+	 * @param {Object} errorObject 默认错误对象
+	 * @param {Boolean} isPost 是否为post方法
+	 */
+	function doStuff(args, result, prepare, dealMethod, errorObject, isPost) {
+	
+			/**
+		 * doCallback
+		 * @method doCallback
+		 * @param {Object} resultToReturn 
+		 * @param {Object} callback 
+		 * @param {Function} errorCallback 
+		 */
+		function doCallback(resultToReturn, callback, errorCallback) {
+			errorCallback = errorCallback ? errorCallback : callback;
+			if (isErrorObject(resultToReturn))
+				switch (resultToReturn.errorType) {
+				case "cellularNetworkError":
+				case "deviceError":
+				case "wifiConnectionError":
+					wifiCallbackDestination.receivedNonSpecificError(resultToReturn);
+					break;
+				default:
+					errorCallback(resultToReturn)
+				}
+			else
+				callback(resultToReturn)
+		}
+		var params = args[0],
+		callback = args[1],
+		errorCallback = args[2],
+		objectToReturn;
+		if (result && "string" === typeof result.errorType) {
+			objectToReturn = $.extend(unknownErrorObject, result);
+			if (!callback){
+				return objectToReturn;
+			}
+			doCallback(objectToReturn, callback, errorCallback)
+		} else {
+			objectToReturn = $.extend({}, result);
+			var requestParams;
+			requestParams = prepare ? prepare(params, isPost) : params;
+			if (callback){
+				if(requestParams && (requestParams.cmd || requestParams.goformId)){
+					asyncRequest(requestParams, function (data) {
+					    objectToReturn = dealMethod ? $.extend({}, dealMethod(data)) : $.extend({}, data);
+					    requestParams.notCallback || doCallback(objectToReturn, callback, errorCallback)
+				    }, function () {
+					objectToReturn = errorObject ? $.extend(unknownErrorObject, errorObject) : $.extend(unknownErrorObject, {
+							errorType : "Unknown"
+						});
+					    doCallback(objectToReturn, callback, errorCallback);
+				    }, isPost);
+				}else{
+					doCallback(objectToReturn, callback, errorCallback);
+				}
+			}
+			else {
+				if (requestParams && (requestParams.cmd || requestParams.goformId)){
+					var a = ajaxRequest(requestParams, null, null, !1, isPost);
+					objectToReturn = dealMethod ? $.extend({}, dealMethod(a)) : a;
+				}					
+				return objectToReturn;
+			}
+		}
+	}
+	/**
+	 * 获取当前语言
+	 * @method getLanguage
+	 */
+	function getLanguage() {
+		return doStuff(arguments, {}, function () {
+			var requestParams = {};
+			requestParams.isTest = isTest;
+			requestParams.cmd = "Language";
+			requestParams.multi_data = 1;
+			return requestParams
+		}, function (data) {
+			if (data) {
+				var result = {};
+				result.Language = data && data.Language ? data.Language : "en";
+				return result
+			}
+			return unknownErrorObject
+		}, null, !1)
+	}
+	/**
+	 * 定时刷新器。成功获取到数据以后将遍历回调列表
+	 * @method timerUpdater 
+	 */
+	function timerUpdater(a) {
+		if (timerUpdaterEnable) {
+			var queryParams = checkTimerUpdaterParameters();
+			asyncRequest(queryParams, function (data) {
+				for (var h = 0; h < r.length; h++)
+					if ("function" === typeof r[h])
+						r[h](data);
+				$.merge(r, timerCallbackStack);
+				timerCallbackStack = [];
+				$.isFunction(a) && a();
+				setTimeout(function () {
+					timerUpdater()
+				}, 1E3)
+			}, function () {
+				batteryStatus = "0";
+				$.isFunction(a) && a();
+				setTimeout(function () {
+					timerUpdater()
+				}, 1E3)
+			}, !1)
+		} else
+			setTimeout(function () {
+				timerUpdater()
+			}, 1E3)
+	}
+	/**
+     * 检查定时器参数，在未登录前不进行瞬时状态查询
+     * @method checkTimerUpdaterParameters
+     */
+	function checkTimerUpdaterParameters() {
+		var queryParams = {
+			multi_data : 1,
+			isTest : isTest
+		};
+		if (window.location.hash && "#login" != window.location.hash && isLoggedIn) {
+			if (config.HAS_SMS){
+				queryParams.sms_received_flag_flag = 0;
+				queryParams.sts_received_flag_flag = 0;
+			}
+			if(0 < loginTimerQueryString.length && -1 == _.indexOf(timerQueryString, loginTimerQueryString[0])){
+				$.each(loginTimerQueryString, function (a, d) {
+				    timerQueryString.push(d)
+			    });
+			}
+		} else{
+			if(0 < loginTimerQueryString.length && -1 != _.indexOf(timerQueryString, loginTimerQueryString[0])){
+				timerQueryString = _.without(timerQueryString, loginTimerQueryString);
+			}
+		}
+		queryParams.cmd = timerQueryString.join(",");
+		return queryParams
+	}
+	/**
+	 * 增加定时刷新参数及回调
+	 * @method addTimerThings
+	 * @param {Array || String} querys 查询key
+	 * @param {Function} cb callback
+	 */
+	function addTimerThings(querys, cb) {
+		if (_.isArray(querys))
+			for (var d = 0; d < querys.length; d++) {
+				var h = querys[d];
+				-1 == _.indexOf(timerQueryString, h) && timerQueryString.push(h)
+			}
+		else  - 1 == _.indexOf(timerQueryString, querys) && timerQueryString.push(querys);
+		addCallback(cb)
+	}
+	/**
+	 * 删除定时刷新参数及回调
+	 * @method removeTimerThings
+	 * @param {Array || String} querys 查询key
+	 * @param {Function} cb
+	 */
+	function removeTimerThings(querys, cb) {
+		if (_.isArray(querys))
+			for (var d = 0; d < querys.length; d++)
+				removeQueryString(querys[d]);
+		else
+			removeQueryString(querys);
+		removeCallback(cb)
+	}
+	/**
+	 * 增加定时刷新回调
+	 * @method addCallback
+	 * @param {Function} cb
+	 */
+	function addCallback(cb) {
+		-1 == _.indexOf(timerCallbackStack, cb) && timerCallbackStack.push(cb)
+	}
+	/**
+	 * 删除定时刷新回调
+	 * @method removeCallback
+	 * @param {Function} cb
+	 */
+	function removeCallback(cb) {
+		r = _.without(r, cb);
+		0 == r.length && r.push(timerUpdateStatus);
+		return timerCallbackStack
+	}
+	/**
+	 * 删除定时刷新回调
+	 * @method removeQueryString
+	 * @param {String} query
+	 */
+	function removeQueryString(query) {
+		return timerQueryString = _.without(timerQueryString, query)
+	}
+	/**
+	 * 定时刷新默认状态更新回调函数
+	 * @method timerUpdateStatus
+	 * @param {Object} JSON data 定时刷新返回的结果集
+	 */
+	function timerUpdateStatus(data) {
+		config.SIM_CARD_STATUS = data.modem_main_state;
+		config.DEVICE_MODE = data.opms_wan_mode;
+		signalImg = "undefined" == typeof data.signalbar ? "0" : data.signalbar;
+		networkType = data.network_type ? data.network_type : "";
+		if (-1 != networkType.toLowerCase().indexOf("limited_service") || -1 != networkType.toLowerCase().indexOf("limited service"))
+			networkType = "limited_service";
+		else if (-1 != networkType.toLowerCase().indexOf("no_service") || -1 != networkType.toLowerCase().indexOf("no service"))
+			networkType = "no_service";
+		networkOperator = data.network_provider ? data.network_provider : "";
+		spn_b1_flag = data.spn_b1_flag;
+		spn_b2_flag = data.spn_b2_flag;
+		spn_name_data = data.spn_name_data;
+		connectStatus = "undefined" == typeof data.ppp_status ? "ppp_disconnected" : data.ppp_status;
+		curr_connected_devices = !data.station_mac || "" == data.station_mac ? [] : data.station_mac.split(";");//没有timeinfo的定义
+		roamingStatus = "" == $.trim(networkType) || "no_service" == networkType.toLowerCase() || "limited_service" == networkType.toLowerCase() || "modem_sim_undetected" == data.modem_main_state || "modem_waitpin" == data.modem_main_state || "modem_waitpuk" == data.modem_main_state ? !1 : "Internal" == data.simcard_roam || "International" == data.simcard_roam ? !0 : !1;
+		wifiStatus = "1" == data.RadioOff;
+		simStatus = data.modem_main_state;
+		pinStatus = data.pin_status;
+		var batteryLevelTmp = data.battery_vol_percent && 0 < data.battery_vol_percent.length ? data.battery_vol_percent : 100;
+		batteryPers = data.battery_pers;
+		var remainMinutes = Math.round(10800 * (1 - batteryLevelTmp / 100));
+		batteryStatus = "undefined" == typeof data.battery_charging ? "0" : data.battery_charging;
+		batteryLevel = batteryLevelTmp;
+		batteryTime = remainMinutes.toString();
+		data_counter = {
+			uploadRate : "" == data.realtime_tx_thrpt ? 0 : data.realtime_tx_thrpt,
+			downloadRate : "" == data.realtime_rx_thrpt ? 0 : data.realtime_rx_thrpt,
+			currentSent : "" == data.realtime_tx_bytes ? 0 : data.realtime_tx_bytes,
+			currentReceived : "" == data.realtime_rx_bytes ? 0 : data.realtime_rx_bytes,
+			currentConnectedTime : "" == data.realtime_time ? 0 : data.realtime_time,
+			monthlySent : "" == data.monthly_tx_bytes ? 0 : data.monthly_tx_bytes,
+			monthlyReceived : "" == data.monthly_rx_bytes ? 0 : data.monthly_rx_bytes,
+			monthlyConnectedTime : "" == data.monthly_time ? 0 : data.monthly_time,
+			month : "" == data.date_month ? 1 : data.date_month
+		};
+		ssid = data.SSID1;
+		authMode = data.AuthMode;
+		isLoggedIn = config.HAS_LOGIN ? "ok" == data.loginfo : !0;
+		config.isLogin = isLoggedIn;
+		if(config.HAS_SMS){
+			newSmsReceived || (newSmsReceived = 0 < data.sms_received_flag);
+			smsReportReceived || (smsReportReceived = 0 < data.sts_received_flag);
+			smsUnreadCount = "undefined" != typeof data.sms_dev_unread_num ? config.SMS_UNREAD_NUM_INCLUDE_SIM ? parseInt(data.sms_dev_unread_num | 0, 10) + parseInt(data.sms_sim_unread_num | 0, 10) : parseInt(data.sms_dev_unread_num | 0, 10) : parseInt(data.sms_unread_num | 0, 10)
+		}
+		config.isTrafficAlertSet = !("" == data.data_volume_limit_size && "" == data.data_volume_alert_percent);
+		if("1" == data.data_volume_limit_switch){
+			limitVolumeEnable = !0;
+			limitVolumeType = "data" == data.data_volume_limit_unit ? "1" : "0";
+			limitVolumePercent = data.data_volume_alert_percent;
+			if("data" == data.data_volume_limit_unit){
+				var b = data.data_volume_limit_size.split("_");
+				limitVolumeSize = 1048576 * b[0] * b[1];
+			}else{
+				limitVolumeSize = 3600 * data.data_volume_limit_size;
+			}
+		}else{
+			limitVolumeEnable = !1;
+			limitVolumeType = "1", limitVolumePercent = "100", limitVolumeSize = "0";
+		}
+		connectWifiProfile = data.EX_wifi_profile;
+		connectWifiSSID = data.EX_SSID1;
+		connectWifiStatus = data.ex_wifi_status;
+		multi_ssid_enable = data.m_ssid_enable;
+		roamMode = data.roam_setting_option;
+		opms_wan_mode = data.opms_wan_mode;
+		new_version_state = "1" == data.new_version_state || "version_has_new_critical_software" == data.new_version_state || "version_has_new_optional_software" == data.new_version_state || "upgrade_pack_redownload" == data.current_upgrade_state;
+		current_upgrade_state = data.current_upgrade_state;
+		"downloading" == current_upgrade_state ? current_upgrade_state = "upgrading" : "verify_failed" == current_upgrade_state && (current_upgrade_state = "upgrade_pack_error");
+		is_mandatory = "1" == data.is_mandatory || "version_has_new_critical_software" == data.new_version_state;
+		allowRoamingUpdate = data.upg_roam_switch
+	}
+	/**
+	 * 检查Pbm写入标记
+	 * @method checkPbmWriteFlag
+	 * @param {String} query
+	 */
+	function checkPbmWriteFlag(data, callback, fn) {
+		if ("0" == data.pbm_write_flag)
+			removeTimerThings("pbm_write_flag", fn), callback({
+				result : "success"
+			});
+		else if ("6" == data.pbm_write_flag || "7" == data.pbm_write_flag || "8" == data.pbm_write_flag || "9" == data.pbm_write_flag || "10" == data.pbm_write_flag || "11" == data.pbm_write_flag || "14" == data.pbm_write_flag)
+			removeTimerThings("pbm_write_flag", fn), callback({
+				result : "fail"
+			})
+	}
+	/**
+	 * @method _getPhoneBooks
+	 * @param {String} args location
+	 */
+	function _getPhoneBooks(args, location) {
+		function prepare(params) {
+			var requestParams = {};
+			requestParams.isTest = isTest;
+			requestParams.mem_store = location;
+			requestParams.cmd = 2 == location ? "pbm_data_total" : "pbm_data_info";
+			requestParams.page = params.page;
+			requestParams.data_per_page = params.data_per_page;
+			requestParams.orderBy = params.orderBy;
+			requestParams.isAsc = params.isAsc;
+			return requestParams
+		}
+		function deal(data) {
+			if (data && data.pbm_data) {
+				var books = [];
+				$.each(data.pbm_data, function (i) {
+					books.push({
+						pbm_id : data.pbm_data[i].pbm_id,
+						pbm_location : data.pbm_data[i].pbm_location,
+						pbm_number : data.pbm_data[i].pbm_number,
+						pbm_anr : data.pbm_data[i].pbm_anr,
+						pbm_anr1 : data.pbm_data[i].pbm_anr1,
+						pbm_group : data.pbm_data[i].pbm_group,
+						pbm_name : decodeMessage(data.pbm_data[i].pbm_name),
+						pbm_email : decodeMessage(data.pbm_data[i].pbm_email)
+					})
+				});
+				return {
+					pbm_data : books
+				}
+			}
+			return unknownErrorObject
+		}
+		return 0 == args[0].data_per_page ? {
+			pbm_data : []
+		}
+		 : doStuff(args, {}, prepare, deal, null, !1)
+	}
+	/**
+	 * 电话本
+	 * @method getPhoneBookCapacity
+	 * @param {String} args location
+	 */
+	function getPhoneBookCapacity(args, isSIM) {
+		return doStuff(args, {}, function () {
+			var requestParams = {};
+			requestParams.isTest = isTest;
+			requestParams.cmd = "pbm_capacity_info";
+			requestParams.pbm_location = isSIM ? "pbm_sim" : "pbm_native";
+			return requestParams
+		}, function (data) {
+			return data ? data : unknownErrorObject
+		}, null, !1)
+	}
+	/**
+     * 获取登录状态
+     * @method getLoginStatus
+     * @return {Object} JSON
+     * @example
+     //返回结果格式
+     {
+        status = "loggedIn";
+     }
+     */
+	function getLoginStatus() {
+		if (void 0 != isLoggedIn)
+			return doStuff(arguments, {
+				status : isLoggedIn ? "loggedIn" : "loggedOut"
+			});
+		var resultObject = {};
+		if (!config.HAS_LOGIN)
+			resultObject.status = "loggedIn", resultObject.errorType = "no_login", isLoggedIn = !0;
+		return doStuff(arguments, resultObject, function () {
+			var requestParams = {};
+			requestParams.isTest = isTest;
+			requestParams.cmd = "loginfo";
+			requestParams.multi_data = 1;
+			return requestParams
+		}, function (data) {
+			if (data && data.loginfo) {
+				var loginStatus = {};
+				switch (data.loginfo) {
+				case "ok":
+					isLoggedIn = !0;
+					loginStatus.status = "loggedIn";
+					break;
+				default:
+					isLoggedIn = !1,
+					loginStatus.status = "loggedOut"
+				}
+				return loginStatus
+			}
+			isLoggedIn = void 0;
+			return $.extend(unknownErrorObject, {
+				errorType : "LoginStatusError"
+			})
+		}, null, !1)
+	}
+	/**
+     * 解析短信
+     * @method parseMessages
+     */
+	function parseMessages(messages, isReport) {
+		for (var result = [], h = 0; h < messages.length; h++)
+			if (config.SHOW_UN_COMPLETE_CONCAT_SMS || !("undefined" != typeof messages[h].received_all_concat_sms && "0" == messages[h].received_all_concat_sms)) {
+				var oneMessage = {};
+				oneMessage.id = messages[h].id;
+				oneMessage.number = messages[h].number;
+				oneMessage.number8 = getLast8Number(messages[h].number);
+				oneMessage.content = isReport ? messages[h].content : decodeMessage(escapeMessage(messages[h].content));
+				oneMessage.time = transTime("20" + messages[h].date);
+				oneMessage.isNew = "1" == messages[h].tag;
+				oneMessage.groupId = messages[h].draft_group_id;
+				oneMessage.tag = messages[h].tag;
+				oneMessage.receivedAll = "1" == messages[h].received_all_concat_sms;
+				result.push(oneMessage)
+			}
+		if (config.SMS_DATABASE_SORT_SUPPORT)
+			return result;
+		for (var ids = [], tmpResult = [], h = result.length; h--; ) {
+			var n = result[h],
+			idx = $.inArray(n.id, ids);
+			-1 == idx ? (ids.push(n.id), tmpResult.push(n)) : n.content.length > tmpResult[idx].content.length && (tmpResult[idx] = n)
+		}
+		return _.sortBy(tmpResult, function (n) {
+			return 0 - n.id;
+		})
+	}
+	/**
+     * 获得sms状态
+     * @method getSmsStatusInfo
+     */
+	function getSmsStatusInfo(obj, callback, errorCabllback) {
+		asyncRequest({
+			cmd : "sms_cmd_status_info",
+			sms_cmd : obj.smsCmd,
+			isTest : isTest
+		}, function (data) {
+			data ? (status = data.sms_cmd_status_result, "2" == status ? errorCabllback($.extend(unknownErrorObject, {
+						errorType : obj.errorType,
+						errorText : obj.errorText
+					})) : "3" == status ? callback({
+					result : "success"
+				}) : window.setTimeout(function () {
+					getSmsStatusInfo(obj, callback, errorCabllback)
+				}, 1E3)) : errorCabllback($.extend(unknownErrorObject, {
+					errorType : obj.errorType,
+					errorText : obj.errorText
+				}))
+		}, function () {
+			errorCabllback($.extend(unknownErrorObject, {
+					errorType : obj.errorType,
+					errorText : obj.errorText
+				}))
+		}, !1)
+	}
+	/**
+     * 检测恢复出厂设置是否完成
+     * @method checkRestoreStatus
+     */
+	function checkRestoreStatus(successCallback) {
+		var requestParams = {};
+		requestParams.isTest = isTest;
+		requestParams.cmd = "restore_flag";
+		requestParams.multi_data = 1;
+		asyncRequest(requestParams, function (data) {
+			data && "1" === data.restore_flag ? successCallback() : setTimeout(function () {
+				checkRestoreStatus(successCallback)
+			}, 5E3)
+		}, function () {
+			setTimeout(function () {
+				checkRestoreStatus(successCallback)
+			}, 5E3)
+		}, !1)
+	}
+	/**
+     * 业务处理后，轮询检测服务器是否可以连接，可连接时执行回调函数
+     * @method doStuffAndCheckServerIsOnline
+     */
+	function doStuffAndCheckServerIsOnline(arg, prepare, deal) {
+		var isServerOnline = !1,
+		isCallbackExecuted = !1,
+		params = prepare(arg[0]),
+		callback = arg[1],
+		successCallback = function (data) {
+			isServerOnline = !0;
+			!isCallbackExecuted && callback && doStuff(deal(arg));
+			isCallbackExecuted = !0;
+		},
+		errorMethod = arg[2];
+		asyncRequest(params, successCallback, function () {
+			isServerOnline = !0;
+			errorMethod && errorMethod()
+		}, !0);
+		addTimeout(function () {
+			if (!1 == isServerOnline)
+				var timer = addInterval(function () {
+						!1 == isServerOnline && getLanguage({}, function () {
+							window.clearInterval(timer);
+							successCallback({
+								result : "success"
+							})
+						})
+					}, 1E3)
+		}, 5E3)
+	}
+	/**
+	 * 获取响应
+	 * @method getResponse
+	 */
+	function getResponse() {
+		$.ajax({
+			url : "/goform/goform_get_cmd_process",
+			data : {
+				cmd : "ussd_write_flag"
+			},
+			cache : !1,
+			async : !0,
+			dataType : "json",
+			success : function (result) {
+				"1" == result.ussd_write_flag ? callbackTemp(!1, "ussd_no_service") : "4" == result.ussd_write_flag || "unknown" == result.ussd_write_flag || "3" == result.ussd_write_flag ? callbackTemp(!1, "ussd_timeout") : "15" == result.ussd_write_flag ? setTimeout(getResponse, 1E3) : "10" == result.ussd_write_flag ? callbackTemp(!1, "ussd_retry") : "99" == result.ussd_write_flag ? callbackTemp(!1, "ussd_unsupport") : "41" == result.ussd_write_flag ? callbackTemp(!1, "operation_not_supported") : "2" == result.ussd_write_flag ? callbackTemp(!1, "network_terminated") : "16" == result.ussd_write_flag ? $.ajax({
+					url : "/goform/goform_get_cmd_process",
+					data : {
+						cmd : "ussd_data_info"
+					},
+					dataType : "json",
+					async : !0,
+					cache : !1,
+					success : function (data) {
+						var content = {};
+						content.data = data.ussd_data;
+						content.ussd_action = data.ussd_action;
+						content.ussd_dcs = data.ussd_dcs;
+						callbackTemp(!0, content)
+					},
+					error : function () {
+						callbackTemp(!1, "ussd_info_error")
+					}
+				}) : callbackTemp(!1, "ussd_fail")
+			},
+			error : function () {
+				callbackTemp(!1, "ussd_fail")
+			}
+		})
+	}
+	/**
+     * 检查扫描状态
+     * @method checkRescanStatus
+     */
+	function checkRescanStatus(data, callback, fn) {
+		"1" == data.dlna_rescan_end && (removeTimerThings("dlna_rescan_end", fn), callback({
+				result : "success"
+			}))
+	}
+	/**
+     * 获取AP Station基本设置
+     * @method getAPStationBasic
+     */
+	function getAPStationBasic() {
+		return doStuff(arguments, {}, function () {
+			return {
+				isTest : isTest,
+				multi_data : 1,
+				cmd : "wifi_sta_connection,ap_station_mode"
+			}
+		}, function (data) {
+			return data ? {
+				ap_station_enable : data.wifi_sta_connection,
+				ap_station_mode : data.ap_station_mode
+			} : unknownErrorObject
+		}, null, !1)
+	}
+	/**
+     * 将热点信息组成字符串
+     * @method creatHotspotString
+     */
+	function creatHotspotString(hotspot) {
+		var item = [];
+		item.push(hotspot.profileName);
+		item.push(hotspot.fromProvider || "0");
+		item.push(hotspot.connectStatus || "0");
+		item.push(hotspot.signal);
+		item.push(hotspot.ssid);
+		item.push(hotspot.authMode);
+		item.push(hotspot.encryptType);
+		item.push(hotspot.password || "0");
+		item.push(hotspot.keyID);
+		return item.join(",")
+	}
+	
+	
+    /**
+     * 直接传递nv值获得对应参数方式，并通过,连接起来 ， 返回的是(字符串)？？
+     * @method getAPStationBasic
+     */
+	function getParams() {
+		return doStuff(arguments, {}, function (data) {
+			var params = {};
+			params.isTest = isTest;
+			_.isArray(data.nv) ? (params.cmd = data.nv.join(","), params.multi_data = 1) : params.cmd = data.nv;
+			return params
+		}, function (data) {
+			return data ? data : unknownErrorObject
+		}, null, !1)
+	}
+	var wifiCallbackDestination = window,
+	unknownErrorObject = {
+		errorType : "UnknownError",
+		errorId : "123",
+		errorText : "UnknownError"
+	},
+	isTest = zte_web_ui_is_test;
+	isTest && $("#buttom-bubble").hide();
+	var timerUpdaterEnable = !0;
+	networkType = "";
+	signalImg = "0";
+	spn_b1_flag = "1";
+	spn_name_data = "";
+	spn_b2_flag = "1";
+	networkOperator = "China Mobile";
+	connectStatus = "ppp_disconnected";
+	curr_connected_devices = [];
+	data_counter = {
+		uploadRate : 0,
+		downloadRate : 0,
+		totalSent : 0,
+		totalReceived : 0,
+		totalConnectedTime : 0,
+		currentSent : 0,
+		currentReceived : 0,
+		currentConnectedTime : 0,
+		monthlySent : 0,
+		monthlyReceived : 0,
+		monthlyConnectedTime : 0,
+		month : ""
+	};
+	newSmsReceived = !1;
+	smsReportReceived = !1;
+	smsUnreadCount = "0";
+	isLoggedIn = void 0;
+	limitVolumeEnable = !1;
+	limitVolumeType = "1";
+	limitVolumePercent = "100";
+	limitVolumeSize = "0";
+	allowRoamingUpdate = "0";
+	opms_wan_mode = "";
+	ap_station_enable = void 0;
+	ap_station_mode = void 0;
+	dialMode = "";
+	roamingStatus = void 0;
+	wifiStatus = void 0;
+	simStatus = void 0;
+	pinStatus = void 0;
+	batteryStatus = void 0;
+	batteryLevel = void 0;
+	batteryPers = void 0;
+	batteryTime = void 0;
+	ssid = void 0;
+	authMode = void 0;
+	connectWifiProfile = void 0;
+	connectWifiSSID = void 0;
+	connectWifiStatus = void 0;
+	multi_ssid_enable = void 0;
+	roamMode = void 0;
+	current_upgrade_state = void 0;
+	is_mandatory = void 0;
+	new_version_state = void 0;
+	/**
+     * 定时刷新获取的参数列表
+	 * @attribute {Array} timerQueryString 
+	 */
+	var timerQueryString = "modem_main_state,pin_status,opms_wan_mode,loginfo,new_version_state,current_upgrade_state,is_mandatory".split(","),
+	loginTimerQueryString = "signalbar,network_type,network_provider,ppp_status,EX_SSID1,ex_wifi_status,EX_wifi_profile,m_ssid_enable,RadioOff,simcard_roam,lan_ipaddr,station_mac,battery_charging,battery_vol_percent,battery_pers,spn_name_data,spn_b1_flag,spn_b2_flag,realtime_tx_bytes,realtime_rx_bytes,realtime_time,realtime_tx_thrpt,realtime_rx_thrpt,monthly_rx_bytes,monthly_tx_bytes,monthly_time,date_month,data_volume_limit_switch,data_volume_limit_size,data_volume_alert_percent,data_volume_limit_unit,roam_setting_option,upg_roam_switch".split(",");
+	config.HAS_SMS && $.merge(loginTimerQueryString, ["sms_received_flag", "sts_received_flag", "sms_unread_num"]);
+	var timerCallbackStack = [],
+	r = [timerUpdateStatus];
+	return {
+		/**
+	     * 获取基本的wifi信息
+	     * @method getWifiBasic
+	     * @return {Object} wifi JSON 对象 
+	     */
+		getWifiBasic : function () {
+			return doStuff(arguments, {}, function () {
+				var requestParams = {};
+				requestParams.isTest = isTest;
+				requestParams.cmd = "m_ssid_enable,RadioOff,NoForwarding,m_NoForwarding," + (i.PASSWORD_ENCODE ? "WPAPSK1_encode,m_WPAPSK1_encode," : "WPAPSK1,m_WPAPSK1,") + "MAX_Station_num,SSID1,AuthMode,HideSSID,MAX_Access_num,EncrypType,m_SSID,m_AuthMode,m_HideSSID,m_MAX_Access_num,m_EncrypType";
+				requestParams.multi_data = 1;
+				return requestParams
+			}, function (a) {
+				return a ? {
+					wifi_enable : a.RadioOff,
+					multi_ssid_enable : a.m_ssid_enable,
+					MAX_Station_num : $.isNumeric(a.MAX_Station_num) ? a.MAX_Station_num : config.MAX_STATION_NUMBER,
+					AuthMode : a.AuthMode,
+					SSID : a.SSID1,
+					broadcast : a.HideSSID,
+					apIsolation : a.NoForwarding,
+					passPhrase : config.PASSWORD_ENCODE ? Base64.decode(a.WPAPSK1_encode) : a.WPAPSK1,
+					MAX_Access_num : a.MAX_Access_num,
+					cipher : "TKIP" == a.EncrypType ? "0" : "AES" == a.EncrypType ? 1 : 2,
+					m_SSID : a.m_SSID,
+					m_broadcast : a.m_HideSSID,
+					m_apIsolation : a.m_NoForwarding,
+					m_MAX_Access_num : a.m_MAX_Access_num,
+					m_AuthMode : a.m_AuthMode,
+					m_passPhrase : config.PASSWORD_ENCODE ? Base64.decode(a.m_WPAPSK1_encode) : a.m_WPAPSK1,
+					m_cipher : "TKIP" == a.m_EncrypType ? "0" : "AES" == a.m_EncrypType ? 1 : 2
+				} : unknownErrorObject
+			}, null, !1)
+		},
+		/**
+		 * 设置基本的wifi信息(SSID1)
+		 * @method setWifiBasic(SSID1)
+		 * @param {Object} JSON 参数对象
+		 * @return {Object}
+		 */
+		setWifiBasic : function () {
+			doStuffAndCheckServerIsOnline(arguments, function (params) {
+				var requestParams = {
+					goformId : "SET_WIFI_SSID1_SETTINGS",
+					isTest : isTest,
+					ssid : params.SSID,
+					broadcastSsidEnabled : params.broadcast,
+					MAX_Access_num : params.station,
+					security_mode : params.AuthMode,
+					cipher : params.cipher,
+					NoForwarding : params.NoForwarding
+				};
+				if("WPAPSKWPA2PSK" == params.AuthMode || "WPA2PSK" == params.AuthMode){
+					requestParams.security_shared_mode = params.cipher;
+					requestParams.passphrase = config.PASSWORD_ENCODE ? Base64.encode(params.passPhrase) : params.passPhrase;
+				}else{
+					 requestParams.security_shared_mode = "NONE";
+				}
+				return requestParams
+			}, function (data) {
+				return data ? data : unknownErrorObject
+			})
+		},
+		/**
+    	 * 设置基本的wifi信息(SSID2)
+    	 * @method setWifiBasic(SSID2)
+    	 * @param {Object} JSON 参数对象
+     	 * @return {Object}
+    	 */
+		setWifiBasic4SSID2 : function () {
+			doStuffAndCheckServerIsOnline(arguments, function (params) {
+				var requestParams = {
+					goformId : "SET_WIFI_SSID2_SETTINGS",
+					isTest : isTest,
+					m_SSID : params.m_SSID,
+					m_HideSSID : params.m_broadcast,
+					m_MAX_Access_num : params.m_station,
+					m_AuthMode : params.m_AuthMode,
+					cipher : params.m_cipher,
+					m_NoForwarding : params.m_NoForwarding
+				};
+				"WPAPSKWPA2PSK" == params.m_AuthMode || "WPA2PSK" == params.m_AuthMode ? (requestParams.m_EncrypType = params.m_cipher, requestParams.m_WPAPSK1 = config.PASSWORD_ENCODE ? Base64.encode(params.m_passPhrase) : params.m_passPhrase) : requestParams.m_EncrypType = "NONE";
+				return requestParams
+			}, function (data) {
+				return data ? data : unknownErrorObject
+			})
+		},
+		/**
+         * 设置基本的wifi信息
+         * @method setWifiBasic
+         * @param {Object} JSON 参数对象
+         * @example
+         * @return {Object}
+         */
+		setWifiBasicMultiSSIDSwitch : function () {
+			B(arguments, function (a) {
+				return g.extend({
+					goformId : "SET_WIFI_INFO",
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a ? a : f
+			})
+		},
+		 /**
+    	 * 获取wifi安全设置信息
+    	 * @method getSecurityInfo
+    	 * @return {Object} wifi 安全 json 对象
+    	 */
+		getSecurityInfo : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "AuthMode,passPhrase";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.AuthMode = a.AuthMode;
+					b.passPhrase = i.PASSWORD_ENCODE ? Base64.decode(a.passPhrase) : a.passPhrase;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		/**
+         * 设置wifi安全设置信息
+         * @method setSecurityInfo
+         */
+		setSecurityInfo : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "SET_WIFI_SECURITY_INFO";
+				b.AuthMode = a.AuthMode;
+				if ("WPAPSKWPA2PSK" == b.AuthMode)
+					b.passPhrase = i.PASSWORD_ENCODE ? Base64.encode(a.passPhrase) : a.passPhrase;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getCurrentlyAttachedDevicesInfo : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "station_list"
+				}
+			}, function (a) {
+				for (var b = [], a = a.station_list, d = 0; a && d < a.length; d++) {
+					var h = {};
+					h.macAddress = a[d].mac_addr;
+					var c = a[d].hostname;
+					h.hostName = "" == c ? g.i18n.prop("unknown") : c;
+					h.ipAddress = a[d].ip_addr;
+					b.push(h)
+				}
+				return {
+					attachedDevices : b
+				}
+			}, null, !1)
+		},
+		getLanguage : ma,
+		setLanguage : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "SET_WEB_LANGUAGE";
+				b.Language = a.Language;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getNetSelectInfo : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "current_network_mode,m_netselect_save,net_select_mode,m_netselect_contents,net_select,ppp_status,modem_main_state";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.current_network_mode = a.current_network_mode;
+					b.net_select_mode = a.net_select_mode;
+					b.m_netselect_save = a.m_netselect_save;
+					b.m_netselect_contents = a.m_netselect_contents;
+					b.net_select = a.net_select;
+					b.ppp_status = a.ppp_status;
+					b.modem_main_state = a.modem_main_state;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setBearerPreference : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "SET_BEARER_PREFERENCE";
+				b.BearerPreference = a.strBearerPreference;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		scanForNetwork : function (a) {
+			function b() {
+				g.getJSON("/goform/goform_get_cmd_process", {
+					cmd : "m_netselect_status",
+					_ : (new Date).getTime()
+				}, function (h) {
+					"manual_selecting" == h.m_netselect_status ? setTimeout(b, 1E3) : g.getJSON("/goform/goform_get_cmd_process", {
+						cmd : "m_netselect_contents",
+						_ : (new Date).getTime()
+					}, function (b) {
+						"" != trim(b.m_netselect_contents) ? d(b.m_netselect_contents) : a(!1, [])
+					}).error(function () {
+						a(!1, [])
+					})
+				}).error(function () {
+					a(!1, [])
+				})
+			}
+			function d(b) {
+				for (var d = /([^,;]*),([^,]*),([^,]*),([^,;]*)/g, c = [], e; e = d.exec(b); )
+					null != e && c.push({
+						strShortName : e[2].replace(/\"/g, ""),
+						strNumeric : e[3].replace(/\D/g, ""),
+						nRat : parseInt(e[4], 10),
+						nState : parseInt(e[1], 10)
+					});
+				a(!0, c)
+			}
+			c ? setTimeout(function () {
+				d(simulate.m_netselect_contents)
+			}, 500) : g.post("/goform/goform_set_cmd_process", {
+				goformId : "SCAN_NETWORK"
+			}, function (d) {
+				"success" == d.result ? b() : a(!1, [])
+			}, "json").error(function () {
+				a(!1, [])
+			})
+		},
+		getConnectionInfo : function () {
+			var a = {
+				data_counter : E,
+				connectStatus : k,
+				limitVolumeEnable : x,
+				limitVolumeType : t,
+				networkType : l
+			};
+			"1" == t ? (a.limitDataMonth = p, a.limitTimeMonth = 0) : (a.limitTimeMonth = p, a.limitDataMonth = 0);
+			a.opms_wan_mode = G;
+			return a
+		},
+		getStatusInfo : function () {
+			if (void 0 === j) {
+				var a = ra();
+				return {
+					networkType : l,
+					signalImg : J,
+					networkOperator : K,
+					spn_b1_flag : L,
+					spn_name_data : M,
+					spn_b2_flag : N,
+					connectStatus : k,
+					attachedDevices : O,
+					roamingStatus : P,
+					wifiStatus : Q,
+					simStatus : C,
+					pinStatus : R,
+					batteryStatus : batteryStatus,
+					batteryLevel : S,
+					batteryPers : T,
+					batteryTime : U,
+					ssid : V,
+					authMode : W,
+					data_counter : E,
+					isLoggedIn : "loggedIn" == a.status,
+					newSmsReceived : v,
+					smsReportReceived : w,
+					smsUnreadCount : X,
+					limitVolumeEnable : x,
+					limitVolumeType : t,
+					limitVolumePercent : F,
+					limitVolumeSize : p,
+					connectWifiProfile : Y,
+					connectWifiSSID : Z,
+					connectWifiStatus : $,
+					multi_ssid_enable : aa,
+					roamMode : ba,
+					opms_wan_mode : G,
+					current_upgrade_state : q,
+					is_mandatory : ca,
+					new_version_state : da,
+					allowRoamingUpdate : ea
+				}
+			}
+			return {
+				networkType : l,
+				signalImg : J,
+				networkOperator : K,
+				spn_b1_flag : L,
+				spn_name_data : M,
+				spn_b2_flag : N,
+				connectStatus : k,
+				attachedDevices : O,
+				roamingStatus : P,
+				wifiStatus : Q,
+				simStatus : C,
+				pinStatus : R,
+				batteryStatus : batteryStatus,
+				batteryLevel : S,
+				batteryPers : T,
+				batteryTime : U,
+				ssid : V,
+				authMode : W,
+				data_counter : E,
+				isLoggedIn : j,
+				newSmsReceived : v,
+				smsReportReceived : w,
+				smsUnreadCount : X,
+				limitVolumeEnable : x,
+				limitVolumeType : t,
+				limitVolumePercent : F,
+				limitVolumeSize : p,
+				connectWifiProfile : Y,
+				connectWifiSSID : Z,
+				connectWifiStatus : $,
+				multi_ssid_enable : aa,
+				opms_wan_mode : G,
+				roamMode : ba,
+				current_upgrade_state : q,
+				is_mandatory : ca,
+				new_version_state : da,
+				allowRoamingUpdate : ea
+			}
+		},
+		connect : function () {
+			function a(h) {
+				"ppp_connecting" == h.ppp_status ? k = "ppp_connecting" : checkConnectedStatus(h.ppp_status) ? (o(a), k = "ppp_connected", b({
+							result : !0,
+							status : k
+						})) : 1E4 > (new Date).getTime() - d ? k = "ppp_connecting" : (o(a), b({
+							result : !1
+						}))
+			}
+			var b = arguments[1],
+			d = 0;
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.notCallback = !0;
+				a.goformId = "CONNECT_NETWORK";
+				return a
+			}, function (h) {
+				"success" == h.result ? (d = (new Date).getTime(), z(a)) : b({
+					result : !1
+				})
+			}, null, !0)
+		},
+		disconnect : function () {
+			function a(h) {
+				"ppp_disconnecting" == h.ppp_status ? k = "ppp_disconnecting" : "ppp_disconnected" == h.ppp_status ? (o(a), k = "ppp_disconnected", b({
+							result : !0,
+							status : k
+						})) : 1E4 > (new Date).getTime() - d ? k = "ppp_disconnecting" : (o(a), b({
+							result : !1
+						}))
+			}
+			var b = arguments[1],
+			d = 0;
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.notCallback = !0;
+				a.goformId = "DISCONNECT_NETWORK";
+				return a
+			}, function (h) {
+				"success" == h.result ? (d = (new Date).getTime(), z(a)) : b({
+					result : !1
+				})
+			}, null, !0)
+		},
+		setNetwork : function (a, b, d) {
+			if (("string" !== typeof a || "" === a || "number" !== typeof b || isNaN(b)) && "function" === typeof d)
+				d(!1);
+			else {
+				var h = -1;
+				-1 === (0 === b ? 0 : 2 === b ? 2 : 7 == b ? 7 : -1) && "function" === typeof d ? d(!1) : asyncRequest({
+					isTest : c,
+					goformId : "SET_NETWORK",
+					NetworkNumber : a,
+					Rat : b
+				}, function (a) {
+					if (a && "success" == a.result)
+						var b = 0, h = setInterval(function () {
+								var a =
+									ajaxRequest({
+										cmd : "m_netselect_result",
+										isTest : c
+									}, null, null, !1, !1);
+								a || d(!1);
+								"manual_success" == a.m_netselect_result ? (window.clearInterval(h), d(!0)) : "manual_fail" == a.m_netselect_result ? (window.clearInterval(h), d(!1)) : 120 > b ? b++ : (window.clearInterval(h), d(!1))
+							}, 1E3);
+					else
+						d(!1)
+				}, function () {
+					d(!1)
+				}, !0)
+			}
+		},
+		getCurrentNetwork : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "current_network";
+				return a
+			}, function (a) {
+				return a ? {
+					strFullName : a.strFullName,
+					strShortName : a.strShortName,
+					strNumeric : a.strNumeric,
+					nRat : Number(a.nRat),
+					strBearer : a.strBearer
+				}
+				 : f
+			}, null, !1)
+		},
+		savePhoneBook : function () {
+			function a(d) {
+				ha(d, b, a)
+			}
+			var b = arguments[1];
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.notCallback = !0;
+				b.goformId = "PBM_CONTACT_ADD";
+				b.location = a.location;
+				b.name = encodeMessage(a.name);
+				b.mobilephone_num = a.mobile_phone_number;
+				if (1 == b.location) {
+					if (b.add_index_pc = a.index, b.homephone_num = a.home_phone_number, b.officephone_num = a.office_phone_number, b.email = encodeMessage(a.mail), b.groupchoose = a.group, !b.groupchoose)
+						b.groupchoose =
+							"common"
+				} else
+					b.edit_index = a.index;
+				return b
+			}, function (d) {
+				d && "success" == d.result ? s("pbm_write_flag", a) : b(d)
+			}, null, !0)
+		},
+		deletePhoneBooks : function () {
+			function a(d) {
+				ha(d, b, a)
+			}
+			var b = arguments[1];
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.notCallback = !0;
+				b.goformId = "PBM_CONTACT_DEL";
+				b.del_option = "delete_num";
+				b.delete_id = a.indexs.join(",");
+				return b
+			}, function (d) {
+				d && "success" == d.result ? s("pbm_write_flag", a) : b(d)
+			}, null, !0)
+		},
+		deleteAllPhoneBooks : function () {
+			function a(d) {
+				ha(d, b, a)
+			}
+			var b = arguments[1];
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.notCallback = !0;
+				b.goformId = "PBM_CONTACT_DEL";
+				b.del_option = "delete_all";
+				b.del_all_location = a.location;
+				return b
+			}, function (d) {
+				d && "success" == d.result ? s("pbm_write_flag", a) : b(d)
+			}, null, !0)
+		},
+		deleteAllPhoneBooksByGroup : function () {
+			function a(d) {
+				ha(d, b, a)
+			}
+			var b = arguments[1];
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.notCallback = !0;
+				b.goformId = "PBM_CONTACT_DEL";
+				b.del_option = "delete_all_by_group";
+				b.del_all_location = 3;
+				b.del_group = a.group;
+				return b
+			},
+				function (d) {
+				d && "success" == d.result ? s("pbm_write_flag", a) : b(d)
+			}, null, !0)
+		},
+		getDevicePhoneBooks : function () {
+			return ja(arguments, 1)
+		},
+		getSIMPhoneBooks : function () {
+			return ja(arguments, 0)
+		},
+		getPhoneBooks : function () {
+			return ja(arguments, 2)
+		},
+		getPhoneBookReady : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "pbm_init_flag";
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		getPhoneBooksByGroup : function () {
+			function a(a) {
+				var b = {};
+				b.isTest = c;
+				b.cmd = "pbm_data_total";
+				b.mem_store = 3;
+				b.pbm_group = a.group;
+				b.page = a.page;
+				b.data_per_page = a.data_per_page;
+				b.orderBy = a.orderBy;
+				b.isAsc = a.isAsc;
+				return b
+			}
+			function b(a) {
+				if (a && a.pbm_data) {
+					var b = [];
+					g.each(a.pbm_data, function (c) {
+						b.push({
+							pbm_id : a.pbm_data[c].pbm_id,
+							pbm_location : a.pbm_data[c].pbm_location,
+							pbm_number : a.pbm_data[c].pbm_number,
+							pbm_anr : a.pbm_data[c].pbm_anr,
+							pbm_anr1 : a.pbm_data[c].pbm_anr1,
+							pbm_group : a.pbm_data[c].pbm_group,
+							pbm_name : decodeMessage(a.pbm_data[c].pbm_name),
+							pbm_email : decodeMessage(a.pbm_data[c].pbm_email)
+						})
+					});
+					return {
+						pbm_data : b
+					}
+				}
+				return f
+			}
+			return 0 == arguments[0].data_per_page ? {
+				pbm_data : []
+			} : doStuff(arguments, {}, a, b, null, !1)
+		},
+		getConnectionMode : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "ConnectionMode";
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.connectionMode = a.connectionMode;
+					b.isAllowedRoaming = a.autoConnectWhenRoaming;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setConnectionMode : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "SET_CONNECTION_MODE"
+				};
+				b.isTest = c;
+				b.ConnectionMode = a.connectionMode;
+				b.roam_setting_option = a.isAllowedRoaming;
+				return b
+			}, function (a) {
+				if (a)
+					return a;
+				callback(a)
+			}, null, !0)
+		},
+		getApnSettings : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "APN_config0,APN_config1,APN_config2,APN_config3,APN_config4,APN_config5,APN_config6,APN_config7,APN_config8,APN_config9,APN_config10,APN_config11,APN_config12,APN_config13,APN_config14,APN_config15,APN_config16,APN_config17,APN_config18,APN_config19,ipv6_APN_config0,ipv6_APN_config1,ipv6_APN_config2,ipv6_APN_config3,ipv6_APN_config4,ipv6_APN_config5,ipv6_APN_config6,ipv6_APN_config7,ipv6_APN_config8,ipv6_APN_config9,ipv6_APN_config10,ipv6_APN_config11,ipv6_APN_config12,ipv6_APN_config13,ipv6_APN_config14,ipv6_APN_config15,ipv6_APN_config16,ipv6_APN_config17,ipv6_APN_config18,ipv6_APN_config19,m_profile_name,profile_name,wan_dial,apn_select,pdp_type,pdp_select,pdp_addr,index,Current_index,apn_auto_config,ipv6_apn_auto_config,apn_mode,wan_apn,ppp_auth_mode,ppp_username,ppp_passwd,dns_mode,prefer_dns_manual,standby_dns_manual,ipv6_wan_apn,ipv6_pdp_type,ipv6_ppp_auth_mode,ipv6_ppp_username,ipv6_ppp_passwd,ipv6_dns_mode,ipv6_prefer_dns_manual,ipv6_standby_dns_manual";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				return a ? {
+					APNs : a.APN_config0 + "||" + a.APN_config1 + "||" + a.APN_config2 + "||" + a.APN_config3 + "||" + a.APN_config4 + "||" + a.APN_config5 + "||" + a.APN_config6 + "||" + a.APN_config7 + "||" + a.APN_config8 + "||" + a.APN_config9 + "||" + a.APN_config10 + "||" + a.APN_config11 + "||" + a.APN_config12 + "||" + a.APN_config13 + "||" + a.APN_config14 + "||" + a.APN_config15 + "||" + a.APN_config16 + "||" + a.APN_config17 + "||" + a.APN_config18 + "||" + a.APN_config19,
+					ipv6APNs : a.ipv6_APN_config0 + "||" + a.ipv6_APN_config1 + "||" + a.ipv6_APN_config2 +
+					"||" + a.ipv6_APN_config3 + "||" + a.ipv6_APN_config4 + "||" + a.ipv6_APN_config5 + "||" + a.ipv6_APN_config6 + "||" + a.ipv6_APN_config7 + "||" + a.ipv6_APN_config8 + "||" + a.ipv6_APN_config9 + "||" + a.ipv6_APN_config10 + "||" + a.ipv6_APN_config11 + "||" + a.ipv6_APN_config12 + "||" + a.ipv6_APN_config13 + "||" + a.ipv6_APN_config14 + "||" + a.ipv6_APN_config15 + "||" + a.ipv6_APN_config16 + "||" + a.ipv6_APN_config17 + "||" + a.ipv6_APN_config18 + "||" + a.ipv6_APN_config19,
+					apnMode : a.apn_mode,
+					profileName : a.m_profile_name || a.profile_name,
+					wanDial : a.wan_dial,
+					apnSelect : a.apn_select,
+					pdpType : "IP" == a.pdp_type ? "IP" : a.ipv6_pdp_type,
+					pdpSelect : a.pdp_select,
+					pdpAddr : a.pdp_addr,
+					index : a.index,
+					currIndex : a.Current_index,
+					autoApns : a.apn_auto_config,
+					autoApnsV6 : a.ipv6_apn_auto_config,
+					wanApn : a.wan_apn,
+					authMode : a.ppp_auth_mode.toLowerCase(),
+					username : a.ppp_username,
+					password : a.ppp_passwd,
+					dnsMode : a.dns_mode,
+					dns1 : a.prefer_dns_manual,
+					dns2 : a.standby_dns_manual,
+					wanApnV6 : a.ipv6_wan_apn,
+					authModeV6 : a.ipv6_ppp_auth_mode.toLowerCase(),
+					usernameV6 : a.ipv6_ppp_username,
+					passwordV6 : a.ipv6_ppp_passwd,
+					dnsModeV6 : a.ipv6_dns_mode,
+					dns1V6 : a.ipv6_prefer_dns_manual,
+					dns2V6 : a.ipv6_standby_dns_manual
+				}
+				 : {
+					result : !1
+				}
+			}, null, !1)
+		},
+		deleteApn : function () {
+			return doStuff(arguments, {}, function (a) {
+				a = {
+					isTest : c,
+					apn_action : "delete",
+					apn_mode : "manual",
+					index : a.index
+				};
+				a.goformId = i.USE_IPV6_INTERFACE ? "APN_PROC_EX" : "APN_PROC";
+				return a
+			}, function (a) {
+				return "success" == a.result ? {
+					result : !0
+				}
+				 : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		setDefaultApn : function () {
+			return doStuff(arguments, {}, function (a) {
+				if (i.USE_IPV6_INTERFACE) {
+					var b = {
+						isTest : c,
+						goformId : "APN_PROC_EX",
+						apn_mode : a.apnMode
+					};
+					if ("manual" == a.apnMode)
+						b.apn_action = "set_default", b.set_default_flag = "1", b.pdp_type = a.pdpType, b.index = a.index;
+					return b
+				}
+				return {
+					isTest : c,
+					goformId : "APN_PROC",
+					apn_action : "set_default",
+					index : a.index,
+					apn_mode : a.apnMode,
+					profile_name : a.profileName,
+					wan_apn : a.wanApn,
+					dns_mode : a.dnsMode,
+					prefer_dns_manual : a.dns1,
+					w_standby_dns_manual : a.dns2,
+					ppp_username : a.username,
+					ppp_passwd : a.password,
+					ppp_auth_mode : a.authMode,
+					apn_select : "manual",
+					wan_dial : "*99#",
+					pdp_type : "PPP",
+					pdp_select : "auto",
+					pdp_addr : "",
+					set_default_flag : "1"
+				}
+			},
+				function (a) {
+				return "success" == a.result ? {
+					result : !0
+				}
+				 : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		addOrEditApn : function () {
+			return doStuff(arguments, {}, function (a) {
+				if (i.USE_IPV6_INTERFACE) {
+					var b = {
+						isTest : c,
+						goformId : "APN_PROC_EX",
+						apn_action : "save",
+						apn_mode : "manual",
+						profile_name : a.profileName,
+						wan_dial : "*99#",
+						apn_select : "manual",
+						pdp_type : a.pdpType,
+						pdp_select : "auto",
+						pdp_addr : "",
+						index : a.index
+					};
+					"IP" == a.pdpType ? g.extend(b, {
+						wan_apn : a.wanApn,
+						ppp_auth_mode : a.authMode,
+						ppp_username : a.username,
+						ppp_passwd : a.password,
+						dns_mode : a.dnsMode,
+						prefer_dns_manual : a.dns1,
+						standby_dns_manual : a.dns2
+					}) : "IPv6" == a.pdpType ? g.extend(b, {
+						ipv6_wan_apn : a.wanApnV6,
+						ipv6_ppp_auth_mode : a.authModeV6,
+						ipv6_ppp_username : a.usernameV6,
+						ipv6_ppp_passwd : a.passwordV6,
+						ipv6_dns_mode : a.dnsModeV6,
+						ipv6_prefer_dns_manual : a.dns1V6,
+						ipv6_standby_dns_manual : a.dns2V6
+					}) : g.extend(b, {
+						wan_apn : a.wanApn,
+						ppp_auth_mode : a.authMode,
+						ppp_username : a.username,
+						ppp_passwd : a.password,
+						dns_mode : a.dnsMode,
+						prefer_dns_manual : a.dns1,
+						standby_dns_manual : a.dns2,
+						ipv6_wan_apn : a.wanApnV6,
+						ipv6_ppp_auth_mode : a.authModeV6,
+						ipv6_ppp_username : a.usernameV6,
+						ipv6_ppp_passwd : a.passwordV6,
+						ipv6_dns_mode : a.dnsModeV6,
+						ipv6_prefer_dns_manual : a.dns1V6,
+						ipv6_standby_dns_manual : a.dns2V6
+					})
+				} else
+					b = {
+						isTest : c,
+						goformId : "APN_PROC",
+						apn_action : "save",
+						apn_mode : "manual",
+						index : a.index,
+						profile_name : a.profileName,
+						wan_apn : a.wanApn,
+						dns_mode : a.dnsMode,
+						prefer_dns_manual : a.dns1,
+						w_standby_dns_manual : a.dns2,
+						ppp_auth_mode : a.authMode,
+						ppp_username : a.username,
+						ppp_passwd : a.password,
+						wan_dial : "*99#",
+						apn_select : "manual",
+						pdp_type : "PPP",
+						pdp_select : "auto",
+						pdp_addr : ""
+					};
+				return b
+			}, function (a) {
+				return "success" == a.result ? {
+					result : !0
+				} : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		getSIMPhoneBookCapacity : function () {
+			var a = qa(arguments, !0);
+			return {
+				simPbmTotalCapacity : parseInt(a.pbm_sim_max_record_num),
+				simPbmUsedCapacity : parseInt(a.pbm_sim_used_record_num),
+				simType : a.pbm_sim_type,
+				maxNameLen : parseInt(a.pbm_sim_max_name_len),
+				maxNumberLen : parseInt(a.pbm_sim_max_number_len)
+			}
+		},
+		getDevicePhoneBookCapacity : function () {
+			var a = qa(arguments, !1);
+			return {
+				pcPbmTotalCapacity : parseInt(a.pbm_dev_max_record_num),
+				pcPbmUsedCapacity : parseInt(a.pbm_dev_used_record_num)
+			}
+		},
+		getLoginData : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "modem_main_state,puknumber,pinnumber,save_login,psw_save,psw_fail_num_str,login_lock_time";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				return a ? (a.psw_fail_num_str = "" == a.psw_fail_num_str ? i.MAX_LOGIN_COUNT : a.psw_fail_num_str, a.login_lock_time = "" == a.login_lock_time ? "300" : a.login_lock_time, a) : f
+			}, null, !1)
+		},
+		login : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "LOGIN",
+					password : i.PASSWORD_ENCODE ? Base64.encode(a.password) :
+					a.password,
+					save_login : a.save_login
+				}
+			}, function (a) {
+				if (a && ("0" == a.result || "4" == a.result))
+					return j = !0, {
+						result : !0
+					};
+				var b = {};
+				switch (a.result) {
+				case "1":
+					b = {
+						errorType : "Login Fail"
+					};
+					break;
+				case "2":
+					b = {
+						errorType : "duplicateUser"
+					};
+					break;
+				case "3":
+					b = {
+						errorType : "badPassword"
+					};
+					break;
+				default:
+					b = {
+						errorType : "Login Fail"
+					}
+				}
+				j = !1;
+				return g.extend(f, b)
+			}, {
+				errorType : "badPassword"
+			}, !0)
+		},
+		logout : function () {
+			return doStuff(arguments, {}, function (a) {
+				a = g.extend({}, a);
+				a.isTest = c;
+				a.goformId = "LOGOUT";
+				return a
+			}, function (a) {
+				return a && "success" == a.result ? (j = !1, {
+					result : !0
+				}) : g.extend(f, {
+					errorType : "loggedOutError"
+				})
+			}, null, !0)
+		},
+		getLoginStatus : ra,
+		enterPIN : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "ENTER_PIN";
+				b.PinNumber = a.PinNumber;
+				return b
+			}, function (a) {
+				return a && "success" === a.result ? {
+					result : !0
+				}  : {
+					result : !1
+				}
+			}, {}, !0)
+		},
+		enterPUK : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "ENTER_PUK";
+				b.PUKNumber = a.PUKNumber;
+				b.PinNumber = a.PinNumber;
+				return b
+			}, function (a) {
+				return a && "success" === a.result ? {
+					result : !0
+				} : {
+					result : !1
+				}
+			}, {}, !0)
+		},
+		getSMSReady : function () {
+			if (i.smsIsReady) {
+				var a = arguments[1];
+				return a ? a({
+					sms_cmd : "1",
+					sms_cmd_status_result : "3"
+				}) : {
+					sms_cmd : "1",
+					sms_cmd_status_result : "3"
+				}
+			}
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "sms_cmd_status_info";
+				a.sms_cmd = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					if ("3" == a.sms_cmd_status_result)
+						i.smsIsReady = !0;
+					return a
+				}
+				return f
+			}, null, !1)
+		},
+		getSMSMessages : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					cmd : "sms_data_total",
+					page : a.page,
+					data_per_page : i.SMS_DATABASE_SORT_SUPPORT ?
+					a.smsCount : 500,
+					mem_store : a.nMessageStoreType,
+					tags : a.tags,
+					order_by : a.orderBy
+				}
+			}, function (a) {
+				return a && a.messages && 0 < a.messages.length ? {
+					messages : sa(a.messages)
+				}
+				 : {
+					messages : []
+				}
+			}, {}, !1)
+		},
+		sendSMS : function () {
+			var a = arguments[1],
+			b = arguments[2] ? arguments[2] : a;
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "SEND_SMS",
+					notCallback : !0,
+					Number : a.number,
+					sms_time : getCurrentTimeString(),
+					MessageBody : escapeMessage(encodeMessage(a.message)),
+					ID : a.id,
+					encode_type : getEncodeType(a.message).encodeType
+				}
+			}, function (d) {
+				d ?
+				"success" == d.result ? setTimeout(function () {
+					I({
+						smsCmd : 4,
+						errorType : "sendFail",
+						errorText : "send_fail_try_again"
+					}, a, b)
+				}, 1E3) : b(g.extend(f, {
+						errorType : "sendFail",
+						errorText : "send_fail_try_again"
+					})) : b(g.extend(f, {
+						errorType : "sendFail",
+						errorText : "send_fail_try_again"
+					}))
+			}, null, !0)
+		},
+		saveSMS : function () {
+			var a = arguments[1],
+			b = arguments[2] ? arguments[2] : a;
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					notCallback : !0,
+					goformId : "SAVE_SMS",
+					SMSMessage : escapeMessage(encodeMessage(a.message)),
+					SMSNumber : a.numbers.join(";") +
+					";",
+					Index : a.index,
+					encode_type : getEncodeType(a.message).encodeType,
+					sms_time : a.currentTimeString,
+					draft_group_id : a.groupId
+				}
+			}, function (d) {
+				d ? "success" == d.result ? I({
+					smsCmd : 5,
+					errorType : "saveFail",
+					errorText : "save_fail"
+				}, a, b) : b(g.extend(f, {
+						errorType : "saveFail",
+						errorText : "save_fail"
+					})) : b(g.extend(f, {
+						errorType : "saveFail",
+						errorText : "save_fail"
+					}))
+			}, null, !0)
+		},
+		deleteAllMessages : function () {
+			function a(c) {
+				c = c.sms_cmd_status_info;
+				"2" == c ? (A("sms_cmd_status_info", a), d(g.extend(f, {
+							errorType : "deleteFail",
+							errorText : "delete_fail_try_again"
+						}))) :
+				"3" == c && (A("sms_cmd_status_info", a), b({
+						result : !0
+					}))
+			}
+			var b = arguments[1],
+			d = arguments[2] ? arguments[2] : b;
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "ALL_DELETE_SMS",
+					notCallback : !0,
+					which_cgi : a.location
+				}
+			}, function (b) {
+				b ? "success" == b.result ? s("sms_cmd_status_info", a) : d(g.extend(f, {
+						errorType : "deleteFail",
+						errorText : "delete_fail_try_again"
+					})) : d(g.extend(f, {
+						errorType : "deleteFail",
+						errorText : "delete_fail_try_again"
+					}))
+			}, null, !0)
+		},
+		deleteMessage : function () {
+			var a = arguments[1],
+			b = arguments[2] ? arguments[2] : a;
+			return doStuff(arguments, {}, function (a) {
+				a = a.ids.join(";") + ";";
+				return {
+					isTest : c,
+					goformId : "DELETE_SMS",
+					msg_id : a,
+					notCallback : !0
+				}
+			}, function (d) {
+				d ? "success" == d.result ? I({
+					smsCmd : 6,
+					errorType : "deleteFail",
+					errorText : "delete_fail_try_again"
+				}, a, b) : b(g.extend(f, {
+						errorType : "deleteFail",
+						errorText : "delete_fail_try_again"
+					})) : b(g.extend(f, {
+						errorType : "deleteFail",
+						errorText : "delete_fail_try_again"
+					}))
+			}, null, !0)
+		},
+		setSmsRead : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = a.ids.join(";");
+				0 < a.ids.length && (b += ";");
+				return {
+					isTest : c,
+					goformId : "SET_MSG_READ",
+					msg_id : b,
+					tag : 0
+				}
+			}, function (a) {
+				return "success" == a.result ? {
+					result : !0
+				}
+				 : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		resetNewSmsReceivedVar : function () {
+			v = !1
+		},
+		resetSmsReportReceivedVar : function () {
+			w = !1
+		},
+		getSMSDeliveryReport : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					cmd : "sms_status_rpt_data",
+					page : a.page,
+					data_per_page : a.smsCount
+				}
+			}, function (a) {
+				return a ? {
+					messages : sa(a.messages, !0)
+				}
+				 : f
+			}, {}, !1)
+		},
+		getSmsCapability : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "sms_capacity_info";
+				return a
+			}, function (a) {
+				return {
+					nvTotal : parseInt(a.sms_nv_total, 10),
+					nvUsed : parseInt(a.sms_nv_rev_total, 10) + parseInt(a.sms_nv_send_total, 10) + parseInt(a.sms_nv_draftbox_total, 10),
+					simTotal : parseInt(a.sms_sim_total, 10),
+					simUsed : parseInt(a.sms_sim_rev_total, 10) + parseInt(a.sms_sim_send_total, 10) + parseInt(a.sms_sim_draftbox_total, 10),
+					nvReceive : parseInt(a.sms_nv_rev_total, 10),
+					nvSend : parseInt(a.sms_nv_send_total, 10),
+					nvDraft : parseInt(a.sms_nv_draftbox_total, 10),
+					simReceive : parseInt(a.sms_sim_rev_total, 10),
+					simSend : parseInt(a.sms_sim_send_total,
+						10),
+					simDraft : parseInt(a.sms_sim_draftbox_total, 10)
+				}
+			}, null, !1)
+		},
+		changePassword : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.newPassword = i.PASSWORD_ENCODE ? Base64.encode(a.newPassword) : a.newPassword;
+				b.oldPassword = i.PASSWORD_ENCODE ? Base64.encode(a.oldPassword) : a.oldPassword;
+				b.goformId = "CHANGE_PASSWORD";
+				b.isTest = c;
+				return b
+			}, function (a) {
+				return a && "success" === a.result ? {
+					result : !0
+				}
+				 : g.extend(f, {
+					errorType : "badPassword"
+				})
+			}, null, !0)
+		},
+		getPinData : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "pinnumber,pin_status,puknumber";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		enablePin : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "ENABLE_PIN"
+				};
+				b.OldPinNumber = a.oldPin;
+				b.isTest = c;
+				return b
+			}, function (a) {
+				return a && "success" === a.result ? {
+					result : !0
+				}
+				 : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		disablePin : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "DISABLE_PIN"
+				};
+				b.OldPinNumber = a.oldPin;
+				b.isTest = c;
+				return b
+			}, function (a) {
+				return a && "success" === a.result ? {
+					result : !0
+				} : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		changePin : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "ENABLE_PIN"
+				};
+				b.OldPinNumber = a.oldPin;
+				b.NewPinNumber = a.newPin;
+				b.isTest = c;
+				return b
+			}, function (a) {
+				return a && "success" === a.result ? {
+					result : !0
+				} : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		getLanInfo : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "lan_ipaddr,lan_netmask,mac_address,dhcpEnabled,dhcpStart,dhcpEnd,dhcpLease_hour";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.ipAddress = a.lan_ipaddr;
+					b.subnetMask = a.lan_netmask;
+					b.macAddress = a.mac_address;
+					b.dhcpServer = a.dhcpEnabled;
+					b.dhcpStart = a.dhcpStart;
+					b.dhcpEnd = a.dhcpEnd;
+					b.dhcpLease = parseInt(a.dhcpLease_hour, 10);
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setLanInfo : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "DHCP_SETTING";
+				b.lanIp = a.ipAddress;
+				b.lanNetmask = a.subnetMask;
+				b.lanDhcpType = "1" == a.dhcpServer ? "SERVER" : "DISABLE";
+				if ("SERVER" == b.lanDhcpType)
+					b.dhcpStart = a.dhcpStart, b.dhcpEnd = a.dhcpEnd, b.dhcpLease = a.dhcpLease;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null,
+				!0)
+		},
+		getSmsSetting : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "sms_parameter_info";
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.centerNumber = a.sms_para_sca;
+					b.memStroe = a.sms_para_mem_store;
+					b.deliveryReport = a.sms_para_status_report;
+					switch (parseInt(a.sms_para_validity_period)) {
+					case 143:
+						b.validity = "twelve_hours";
+						break;
+					case 167:
+						b.validity = "one_day";
+						break;
+					case 173:
+						b.validity = "one_week";
+						break;
+					case 244:
+						b.validity = "largest";
+						break;
+					case 255:
+						b.validity = "largest";
+						break;
+					default:
+						b.validity =
+							"twelve_hours"
+					}
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setSmsSetting : function () {
+			var a = arguments[1],
+			b = arguments[2] ? arguments[2] : a;
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "SET_MESSAGE_CENTER";
+				b.save_time = a.validity;
+				b.MessageCenter = a.centerNumber;
+				b.status_save = a.deliveryReport;
+				b.save_location = "native";
+				b.notCallback = !0;
+				return b
+			}, function (d) {
+				d ? "success" == d.result ? I({
+					smsCmd : 3,
+					errorType : "smsSettingFail",
+					errorText : "error_info"
+				}, a, b) : b(g.extend(f, {
+						errorType : "deleteFail",
+						errorText : "delete_fail_try_again"
+					})) :
+				b(g.extend(f, {
+						errorType : "smsSettingFail",
+						errorText : "error_info"
+					}))
+			}, null, !0)
+		},
+		restoreFactorySettings : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.goformId = "RESTORE_FACTORY_SETTINGS";
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		checkRestoreStatus : ka,
+		getWpsInfo : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "wifi_wps_index,WscModeOption,AuthMode,RadioOff,EncrypType,wps_mode,WPS_SSID,m_ssid_enable,SSID1,m_SSID,m_EncrypType";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.wpsFlag = a.WscModeOption;
+					b.authMode = a.AuthMode;
+					b.wpsType = a.wps_mode;
+					b.radioFlag = a.RadioOff;
+					b.encrypType = a.EncrypType;
+					b.wpsSSID = a.WPS_SSID;
+					b.ssidEnable = a.m_ssid_enable;
+					b.ssid = a.SSID1;
+					b.multiSSID = a.m_SSID;
+					b.m_encrypType = a.m_EncrypType;
+					b.wifi_wps_index = a.wifi_wps_index;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		openWps : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "WIFI_WPS_SET";
+				b.WPS_SSID = a.wpsSSID;
+				b.wps_mode = a.wpsType;
+				b.wifi_wps_index = a.wpsIndex;
+				if ("PIN" == b.wps_mode)
+					b.wps_pin = a.wpsPin;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getSleepMode : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "sysIdleTimeToSleep";
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.sleepMode = a.sysIdleTimeToSleep;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setSleepMode : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "SET_WIFI_SLEEP_INFO";
+				b.sysIdleTimeToSleep = a.sleepMode;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getSysSecurity : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "RemoteManagement,WANPingFilter";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.remoteFlag = "1" == a.RemoteManagement ? "1" : "0";
+					b.pingFlag = "1" == a.WANPingFilter ? "1" : "0";
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setSysSecurity : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "FW_SYS";
+				b.remoteManagementEnabled = a.remoteFlag;
+				b.pingFrmWANFilterEnabled = a.pingFlag;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getPortForward : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "PortForwardEnable,PortForwardRules_0,PortForwardRules_1,PortForwardRules_2,PortForwardRules_3,PortForwardRules_4,PortForwardRules_5,PortForwardRules_6,PortForwardRules_7,PortForwardRules_8,PortForwardRules_9";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.portForwardEnable = a.PortForwardEnable;
+					var d = [];
+					"" != a.PortForwardRules_0 && d.push([0, a.PortForwardRules_0]);
+					"" != a.PortForwardRules_1 && d.push([1, a.PortForwardRules_1]);
+					"" != a.PortForwardRules_2 && d.push([2, a.PortForwardRules_2]);
+					"" != a.PortForwardRules_3 && d.push([3, a.PortForwardRules_3]);
+					"" != a.PortForwardRules_4 && d.push([4, a.PortForwardRules_4]);
+					"" != a.PortForwardRules_5 && d.push([5, a.PortForwardRules_5]);
+					"" != a.PortForwardRules_6 && d.push([6, a.PortForwardRules_6]);
+					"" != a.PortForwardRules_7 && d.push([7, a.PortForwardRules_7]);
+					"" != a.PortForwardRules_8 && d.push([8, a.PortForwardRules_8]);
+					"" != a.PortForwardRules_9 && d.push([9, a.PortForwardRules_9]);
+					a = [];
+					if (d && 0 < d.length)
+						for (var c = 0; c < d.length; c++) {
+							var e = {},
+							g = d[c][1].split(",");
+							e.index =
+								d[c][0];
+							e.ipAddress = g[0];
+							e.portRange = g[1] + " - " + g[2];
+							e.protocol = transProtocol(g[3]);
+							e.comment = g[4];
+							a.push(e)
+						}
+					b.portForwardRules = a;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setPortForward : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "FW_FORWARD_ADD";
+				b.ipAddress = a.ipAddress;
+				b.portStart = a.portStart;
+				b.portEnd = a.portEnd;
+				b.protocol = a.protocol;
+				b.comment = a.comment;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		deleteForwardRules : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "FW_FORWARD_DEL";
+				b.delete_id = a.indexs.join(";") + ";";
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		enableVirtualServer : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "VIRTUAL_SERVER";
+				b.PortForwardEnable = a.portForwardEnable;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getSDConfiguration : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "sdcard_mode_option,sd_card_state,HTTP_SHARE_STATUS,HTTP_SHARE_CARD_USER,HTTP_SHARE_WR_AUTH,HTTP_SHARE_FILE",
+					multi_data : 1
+				}
+			}, function (a) {
+				return a ? {
+					sd_mode : "1" == a.sdcard_mode_option ? "0" : "1",
+					sd_status : a.sd_card_state,
+					share_status : "Enabled" == a.HTTP_SHARE_STATUS ? "1" : "0",
+					share_user : a.HTTP_SHARE_CARD_USER,
+					share_auth : "readWrite" == a.HTTP_SHARE_WR_AUTH ? "1" : "0",
+					file_to_share : "mmc2" == a.HTTP_SHARE_FILE || "/mmc2" == a.HTTP_SHARE_FILE || "/mmc2/" == a.HTTP_SHARE_FILE ? "1" : "0",
+					share_file : a.HTTP_SHARE_FILE
+				}
+				 : f
+			}, null, !1)
+		},
+		setSdCardMode : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "HTTPSHARE_MODE_SET",
+					mode_set : "0" ==
+					a.mode ? "http_share_mode" : "usb_mode"
+				}
+			}, function (a) {
+				return a && "success" == a.result ? {
+					result : !0
+				}
+				 : {
+					result : !1
+				}
+			}, null, !0)
+		},
+		checkFileExists : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "GOFORM_HTTPSHARE_CHECK_FILE",
+					path_SD_CARD : a.path
+				}
+			}, function (a) {
+				return a ? "no_sdcard" == a.result ? {
+					status : "no_sdcard"
+				} : "noexist" == a.result ? {
+					status : "noexist"
+				} : {
+					status : "exist"
+				} : f
+			}, null, !0)
+		},
+		getFileList : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "HTTPSHARE_ENTERFOLD",
+					path_SD_CARD : a.path,
+					indexPage : a.index
+				}
+			}, function (a) {
+				if (a)
+					if ("failure" == a.result)
+						a = g.extend(f, {
+								errorType : "get_file_list_failure"
+							});
+					else if ("no_sdcard" == a.result)
+						a = g.extend(f, {
+								errorType : "no_sdcard"
+							});
+					else {
+						var b = a.result,
+						a = {};
+						a.totalRecord = b.totalRecord;
+						for (var d = [], b = b.fileInfo, c = 0; b && c < b.length; c++)
+							if ("" != b[c].fileName) {
+								var e = {};
+								e.fileName = b[c].fileName;
+								e.attribute = b[c].attribute;
+								e.size = b[c].size;
+								e.lastUpdateTime = b[c].lastUpdateTime;
+								d.push(e)
+							}
+						a.details = d
+					}
+				else
+					a = f;
+				return a
+			}, null, !0)
+		},
+		fileRename : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = new Date,
+				d = b.getTime(),
+				b = 60 * b.getTimezoneOffset();
+				return {
+					isTest : c,
+					goformId : "HTTPSHARE_FILE_RENAME",
+					path_SD_CARD : a.path,
+					OLD_NAME_SD_CARD : a.oldPath,
+					NEW_NAME_SD_CARD : a.newPath,
+					path_SD_CARD_time : transUnixTime(d),
+					path_SD_CARD_time_unix : Math.round((d - 1E3 * b) / 1E3)
+				}
+			}, function (a) {
+				return a ? "success" == a.result ? {
+					result : !0
+				}
+				 : "no_sdcard" == a.result ? g.extend(f, {
+					errorType : "no_sdcard"
+				}) : {
+					result : !1
+				}
+				 : f
+			}, null, !0)
+		},
+		getSdMemorySizes : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "HTTPSHARE_GETCARD_VALUE"
+				}
+			},
+				function (a) {
+				return !a || a.result && "no_sdcard" == a.result ? g.extend(f, {
+					errorType : "no_sdcard"
+				}) : {
+					totalMemorySize : "" == a.sd_card_total_size ? 0 : 32768 * a.sd_card_total_size,
+					availableMemorySize : "" == a.sd_card_avi_space ? 0 : 32768 * a.sd_card_avi_space
+				}
+			}, null, !1)
+		},
+		deleteFilesAndFolders : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = (new Date).getTime();
+				return {
+					isTest : c,
+					goformId : "HTTPSHARE_DEL",
+					path_SD_CARD : a.path,
+					name_SD_CARD : a.names,
+					path_SD_CARD_time : transUnixTime(b),
+					path_SD_CARD_time_unix : Math.round(b / 1E3)
+				}
+			}, function (a) {
+				return a.result &&
+				"failure" == a.result ? g.extend(f, {
+					errorType : "delete_folder_failure"
+				}) : a.result && "no_sdcard" == a.result ? g.extend(f, {
+					errorType : "no_sdcard"
+				}) : a.result && "success" == a.result ? {
+					result : !0
+				}
+				 : f
+			}, null, !0)
+		},
+		createFolder : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = new Date,
+				d = b.getTime(),
+				b = 60 * b.getTimezoneOffset();
+				return {
+					isTest : c,
+					goformId : "HTTPSHARE_NEW",
+					path_SD_CARD : a.path,
+					path_SD_CARD_time : transUnixTime(d),
+					path_SD_CARD_time_unix : Math.round((d - 1E3 * b) / 1E3)
+				}
+			}, function (a) {
+				return a.result && "failure" == a.result ?
+				g.extend(f, {
+					errorType : "create_folder_failure"
+				}) : a.result && "no_sdcard" == a.result ? g.extend(f, {
+					errorType : "no_sdcard"
+				}) : a.result && "success" == a.result ? {
+					result : !0
+				}
+				 : f
+			}, null, !0)
+		},
+		checkUploadFileStatus : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "CheckUploadFileStatus"
+				}
+			}, function (a) {
+				return a ? "5" == a.result ? {
+					result : !1
+				}
+				 : "6" == a.result ? {
+					result : !0
+				}
+				 : {
+					result : !1
+				}
+				 : f
+			}, null, !1)
+		},
+		setSdCardSharing : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "HTTPSHARE_AUTH_SET",
+					HTTP_SHARE_STATUS : "1" == a.share_status ? "Enabled" : "Disabled",
+					HTTP_SHARE_WR_AUTH : "1" == a.share_auth ? "readWrite" : "readOnly",
+					HTTP_SHARE_FILE : a.share_file
+				}
+			}, function (a) {
+				return a ? "no_sdcard" == a.result ? g.extend(f, {
+					errorType : "no_sdcard"
+				}) : {
+					result : !0
+				}
+				 : f
+			}, null, !0)
+		},
+		getQuickSettingInfo : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "pdp_type,ipv6_pdp_type,RadioOff,SSID1,HideSSID,AuthMode,WscModeOption,ppp_status,apn_index,ipv6_apn_index,ipv6_APN_index,m_profile_name,apn_mode" + (i.PASSWORD_ENCODE ? ",WPAPSK1_encode" :
+						",WPAPSK1") + ",APN_config0,APN_config1,APN_config2,APN_config3,APN_config4,APN_config5,APN_config6,APN_config7,APN_config8,APN_config9,APN_config10,APN_config11,APN_config12,APN_config13,APN_config14,APN_config15,APN_config16,APN_config17,APN_config18,APN_config19,ipv6_APN_config0,ipv6_APN_config1,ipv6_APN_config2,ipv6_APN_config3,ipv6_APN_config4,ipv6_APN_config5,ipv6_APN_config6,ipv6_APN_config7,ipv6_APN_config8,ipv6_APN_config9,ipv6_APN_config10,ipv6_APN_config11,ipv6_APN_config12,ipv6_APN_config13,ipv6_APN_config14,ipv6_APN_config15,ipv6_APN_config16,ipv6_APN_config17,ipv6_APN_config18,ipv6_APN_config19";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					if (i.PASSWORD_ENCODE)
+						a.WPAPSK1 = Base64.decode(a.WPAPSK1_encode);
+					return a
+				}
+				return f
+			}, null, !1)
+		},
+		setQuickSetting : function () {
+			B(arguments, function (a) {
+				return {
+					isTest : c,
+					goformId : "QUICK_SETUP",
+					apn_mode : a.apnMode,
+					Profile_Name : a.Profile_Name,
+					APN_name : a.APN_name,
+					ppp_auth_mode : a.ppp_auth_mode,
+					ppp_username : a.ppp_username,
+					ppp_passwd : a.ppp_passwd,
+					SSID_name : a.SSID_name,
+					SSID_Broadcast : a.SSID_Broadcast,
+					Encryption_Mode_hid : a.Encryption_Mode_hid,
+					security_shared_mode : a.security_shared_mode,
+					WPA_PreShared_Key : i.PASSWORD_ENCODE ? Base64.encode(a.WPA_PreShared_Key) : a.WPA_PreShared_Key,
+					wep_default_key : a.wep_default_key,
+					WPA_ENCRYPTION_hid : a.WPA_ENCRYPTION_hid
+				}
+			}, function (a) {
+				return a ? a : g.extend(f, {
+					errorType : "SetSetUpError"
+				})
+			})
+		},
+		setQuickSetting4IPv6 : function () {
+			B(arguments, function (a) {
+				return {
+					isTest : c,
+					goformId : "QUICK_SETUP_EX",
+					index : a.apn_index,
+					pdp_type : a.pdp_type,
+					apn_mode : a.apnMode,
+					profile_name : a.profile_name,
+					wan_apn : a.wan_apn,
+					ppp_auth_mode : a.ppp_auth_mode,
+					ppp_username : a.ppp_username,
+					ppp_passwd : a.ppp_passwd,
+					ipv6_wan_apn : a.ipv6_wan_apn,
+					ipv6_ppp_auth_mode : a.ipv6_ppp_auth_mode,
+					ipv6_ppp_username : a.ipv6_ppp_username,
+					ipv6_ppp_passwd : a.ipv6_ppp_passwd,
+					SSID_name : a.SSID_name,
+					SSID_Broadcast : a.SSID_Broadcast,
+					Encryption_Mode_hid : a.Encryption_Mode_hid,
+					security_shared_mode : a.security_shared_mode,
+					WPA_PreShared_Key : i.PASSWORD_ENCODE ? Base64.encode(a.WPA_PreShared_Key) : a.WPA_PreShared_Key,
+					wep_default_key : a.wep_default_key,
+					WPA_ENCRYPTION_hid : a.WPA_ENCRYPTION_hid
+				}
+			}, function (a) {
+				return a ? a : g.extend(f, {
+					errorType : "SetSetUpError"
+				})
+			})
+		},
+		getPortFilter : function () {
+			function a(a, d) {
+				var c = [];
+				if (a && 0 < a.length)
+					for (var e = 0; e < a.length; e++) {
+						var f = {},
+						g = a[e][1].split(",");
+						f.index = a[e][0];
+						f.macAddress = g[11];
+						f.destIpAddress = "any/0" == g[4] ? "" : g[4];
+						f.sourceIpAddress = "any/0" == g[0] ? "" : g[0];
+						f.destPortRange = "0" == g[6] ? "" : g[6] + " - " + g[7];
+						f.sourcePortRange = "0" == g[2] ? "" : g[2] + " - " + g[3];
+						f.action = 1 == g[9] ? "filter_accept" : "filter_drop";
+						f.protocol = transProtocol(g[8]);
+						f.comment = g[10];
+						f.ipType = d;
+						c.push(f)
+					}
+				return c
+			}
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "IPPortFilterEnable,DefaultFirewallPolicy,IPPortFilterRules_0,IPPortFilterRules_1,IPPortFilterRules_2,IPPortFilterRules_3,IPPortFilterRules_4,IPPortFilterRules_5,IPPortFilterRules_6,IPPortFilterRules_7,IPPortFilterRules_8,IPPortFilterRules_9";
+				i.USE_IPV6_INTERFACE && (a.cmd += ",IPPortFilterRulesv6_0,IPPortFilterRulesv6_1,IPPortFilterRulesv6_2,IPPortFilterRulesv6_3,IPPortFilterRulesv6_4,IPPortFilterRulesv6_5,IPPortFilterRulesv6_6,IPPortFilterRulesv6_7,IPPortFilterRulesv6_8,IPPortFilterRulesv6_9");
+				a.multi_data = 1;
+				return a
+			}, function (b) {
+				if (b) {
+					var d = {};
+					d.portFilterEnable = b.IPPortFilterEnable;
+					d.defaultPolicy = b.DefaultFirewallPolicy;
+					var c = [];
+					"" != b.IPPortFilterRules_0 && c.push([0, b.IPPortFilterRules_0]);
+					"" != b.IPPortFilterRules_1 && c.push([1, b.IPPortFilterRules_1]);
+					"" != b.IPPortFilterRules_2 && c.push([2, b.IPPortFilterRules_2]);
+					"" != b.IPPortFilterRules_3 && c.push([3, b.IPPortFilterRules_3]);
+					"" != b.IPPortFilterRules_4 && c.push([4, b.IPPortFilterRules_4]);
+					"" != b.IPPortFilterRules_5 && c.push([5, b.IPPortFilterRules_5]);
+					"" != b.IPPortFilterRules_6 && c.push([6, b.IPPortFilterRules_6]);
+					"" != b.IPPortFilterRules_7 && c.push([7, b.IPPortFilterRules_7]);
+					"" != b.IPPortFilterRules_8 && c.push([8, b.IPPortFilterRules_8]);
+					"" != b.IPPortFilterRules_9 && c.push([9, b.IPPortFilterRules_9]);
+					d.portFilterRules = a(c, "IPv4");
+					if (i.USE_IPV6_INTERFACE)
+						c = [], "" != b.IPPortFilterRulesv6_0 && c.push([10, b.IPPortFilterRulesv6_0]), "" != b.IPPortFilterRulesv6_1 && c.push([11, b.IPPortFilterRulesv6_1]), "" != b.IPPortFilterRulesv6_2 && c.push([12, b.IPPortFilterRulesv6_2]),
+						"" != b.IPPortFilterRulesv6_3 && c.push([13, b.IPPortFilterRulesv6_3]), "" != b.IPPortFilterRulesv6_4 && c.push([14, b.IPPortFilterRulesv6_4]), "" != b.IPPortFilterRulesv6_5 && c.push([15, b.IPPortFilterRulesv6_5]), "" != b.IPPortFilterRulesv6_6 && c.push([16, b.IPPortFilterRulesv6_6]), "" != b.IPPortFilterRulesv6_7 && c.push([17, b.IPPortFilterRulesv6_7]), "" != b.IPPortFilterRulesv6_8 && c.push([18, b.IPPortFilterRulesv6_8]), "" != b.IPPortFilterRulesv6_9 && c.push([19, b.IPPortFilterRulesv6_9]), d.portFilterRules = m.union(d.portFilterRules,
+								a(c, "IPv6"));
+					return d
+				}
+				return f
+			}, null, !1)
+		},
+		setPortFilterBasic : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "BASIC_SETTING";
+				b.portFilterEnabled = a.portFilterEnable;
+				b.defaultFirewallPolicy = a.defaultPolicy;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		setPortFilter : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				i.USE_IPV6_INTERFACE ? (b.goformId = "ADD_IP_PORT_FILETER_V4V6", b.ip_version = a.ipType) : b.goformId = "ADD_IP_PORT_FILETER";
+				b.mac_address = a.macAddress;
+				b.dip_address = a.destIpAddress;
+				b.sip_address = a.sourceIpAddress;
+				b.dFromPort = a.destPortStart;
+				b.dToPort = a.destPortEnd;
+				b.sFromPort = a.sourcePortStart;
+				b.sToPort = a.sourcePortEnd;
+				b.action = a.action;
+				b.protocol = a.protocol;
+				b.comment = a.comment;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		deleteFilterRules : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				var d = m.filter(a.indexs, function (a) {
+						return 1 == a.length
+					});
+				if (i.USE_IPV6_INTERFACE) {
+					b.goformId = "DEL_IP_PORT_FILETER_V4V6";
+					var e = [];
+					m.each(a.indexs, function (a) {
+						2 == a.length && e.push(a.substring(1))
+					});
+					b.delete_id_v6 = 0 < e.length ? e.join(";") + ";" : ""
+				} else
+					b.goformId = "DEL_IP_PORT_FILETER";
+				b.delete_id = 0 < d.length ? d.join(";") + ";" : "";
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getWifiAdvance : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "WirelessMode,CountryCode,Channel,HT_MCS,wifi_band,wifi_11n_cap";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				return a ? {
+					mode : a.WirelessMode,
+					countryCode : a.CountryCode,
+					channel : a.Channel,
+					rate : a.HT_MCS,
+					wifiBand : "a" == a.wifi_band ?
+					"a" : "b",
+					bandwidth : a.wifi_11n_cap
+				}
+				 : f
+			}, null, !1)
+		},
+		setWifiAdvance : function () {
+			B(arguments, function (a) {
+				var b = {
+					goformId : "SET_WIFI_INFO",
+					isTest : c,
+					wifiMode : a.mode,
+					countryCode : a.countryCode
+				};
+				if (i.WIFI_BAND_SUPPORT)
+					b.wifi_band = a.wifiBand;
+				i.WIFI_BAND_SUPPORT && "a" == a.wifiBand ? b.selectedChannel = "auto" : (b.selectedChannel = a.channel, b.abg_rate = a.rate);
+				if (i.WIFI_BANDWIDTH_SUPPORT)
+					b.wifi_11n_cap = a.bandwidth;
+				return b
+			}, function (a) {
+				return a ? a : f
+			})
+		},
+		getWifiRange : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "wifi_coverage";
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.wifiRangeMode = a.wifi_coverage;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setWifiRange : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "SET_WIFI_COVERAGE"
+				};
+				b.isTest = c;
+				b.wifi_coverage = a.wifiRangeMode;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getUpnpSetting : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "upnpEnabled";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.upnpSetting = "1" == a.upnpEnabled ? "1" : "0";
+					return b
+				}
+				return f
+			},
+				null, !1)
+		},
+		setUpnpSetting : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "UPNP_SETTING"
+				};
+				b.isTest = c;
+				b.upnp_setting_option = a.upnpSetting;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getDmzSetting : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "DMZEnable,DMZIPAddress";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.dmzSetting = "1" == a.DMZEnable ? "1" : "0";
+					b.ipAddress = a.DMZIPAddress;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setDmzSetting : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "DMZ_SETTING"
+				};
+				b.isTest = c;
+				b.DMZEnabled = a.dmzSetting;
+				if ("1" == b.DMZEnabled)
+					b.DMZIPAddress = a.ipAddress;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getDeviceInfo : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "wifi_coverage,m_ssid_enable,imei,network_type,rssi,rscp,lte_rsrp,imsi,cr_version,wa_inner_version,hardware_version,MAX_Access_num,SSID1,AuthMode,WPAPSK1_encode,m_SSID,m_AuthMode,m_HideSSID,m_WPAPSK1_encode,m_MAX_Access_num,lan_ipaddr,mac_address,msisdn,LocalDomain,wan_ipaddr,static_wan_ipaddr,ipv6_wan_ipaddr,ipv6_pdp_type,pdp_type,opms_wan_mode,ppp_status",
+					multi_data : 1
+				}
+			}, function (a) {
+				return a ? {
+					ssid : a.SSID1,
+					authMode : a.AuthMode,
+					passPhrase : Base64.decode(a.WPAPSK1_encode),
+					m_ssid : a.m_SSID,
+					m_authMode : a.m_AuthMode,
+					m_passPhrase : Base64.decode(a.m_WPAPSK1_encode),
+					m_max_access_num : a.m_MAX_Access_num,
+					multi_ssid_enable : a.m_ssid_enable,
+					ipAddress : a.lan_ipaddr,
+					wanIpAddress : a.wan_ipaddr,
+					staticWanIpAddress : a.static_wan_ipaddr,
+					ipv6WanIpAddress : a.ipv6_wan_ipaddr,
+					ipv6PdpType : a.ipv6_pdp_type,
+					macAddress : a.mac_address,
+					simSerialNumber : a.msisdn,
+					lanDomain : a.LocalDomain,
+					imei : a.imei,
+					signal : convertSignal(a),
+					imsi : a.imsi,
+					sw_version : a.cr_version,
+					fw_version : a.wa_inner_version,
+					hw_version : a.hardware_version,
+					max_access_num : a.MAX_Access_num,
+					wifiRange : a.wifi_coverage,
+					pdpType : a.pdp_type,
+					opms_wan_mode : a.opms_wan_mode,
+					connectStatus : a.ppp_status
+				}
+				 : f
+			}, null, !1)
+		},
+		getPortMap : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "PortMapEnable,PortMapRules_0,PortMapRules_1,PortMapRules_2,PortMapRules_3,PortMapRules_4,PortMapRules_5,PortMapRules_6,PortMapRules_7,PortMapRules_8,PortMapRules_9";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				if (a) {
+					var b = {};
+					b.portMapEnable = a.PortMapEnable;
+					var d = [];
+					"" != a.PortMapRules_0 && d.push([0, a.PortMapRules_0]);
+					"" != a.PortMapRules_1 && d.push([1, a.PortMapRules_1]);
+					"" != a.PortMapRules_2 && d.push([2, a.PortMapRules_2]);
+					"" != a.PortMapRules_3 && d.push([3, a.PortMapRules_3]);
+					"" != a.PortMapRules_4 && d.push([4, a.PortMapRules_4]);
+					"" != a.PortMapRules_5 && d.push([5, a.PortMapRules_5]);
+					"" != a.PortMapRules_6 && d.push([6, a.PortMapRules_6]);
+					"" != a.PortMapRules_7 && d.push([7, a.PortMapRules_7]);
+					"" != a.PortMapRules_8 && d.push([8, a.PortMapRules_8]);
+					"" != a.PortMapRules_9 && d.push([9, a.PortMapRules_9]);
+					a = [];
+					if (d && 0 < d.length)
+						for (var c = 0; c < d.length; c++) {
+							var e = {},
+							g = d[c][1].split(",");
+							e.index = d[c][0];
+							e.sourcePort = g[1];
+							e.destIpAddress = g[0];
+							e.destPort = g[2];
+							e.protocol = transProtocol(g[3]);
+							e.comment = g[4];
+							a.push(e)
+						}
+					b.portMapRules = a;
+					return b
+				}
+				return f
+			}, null, !1)
+		},
+		setPortMap : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "ADD_PORT_MAP";
+				b.portMapEnabled = a.portMapEnable;
+				b.fromPort =
+					a.sourcePort;
+				b.ip_address = a.destIpAddress;
+				b.toPort = a.destPort;
+				b.protocol = a.protocol;
+				b.comment = a.comment;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		enablePortMap : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "ADD_PORT_MAP";
+				b.portMapEnabled = a.portMapEnable;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		deleteMapRules : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "DEL_PORT_MAP";
+				b.delete_id = a.indexs.join(";") + ";";
+				return b
+			}, function (a) {
+				return a ?
+				a : f
+			}, null, !0)
+		},
+		getTrafficAlertInfo : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "data_volume_limit_switch,data_volume_limit_unit,data_volume_limit_size,data_volume_alert_percent,monthly_tx_bytes,monthly_rx_bytes,monthly_time",
+					multi_data : 1
+				}
+			}, function (a) {
+				if (a) {
+					var b = "data" == a.data_volume_limit_unit;
+					return {
+						dataLimitChecked : a.data_volume_limit_switch,
+						dataLimitTypeChecked : b ? "1" : "0",
+						limitDataMonth : b ? a.data_volume_limit_size : "0",
+						alertDataReach : b ? a.data_volume_alert_percent : "0",
+						limitTimeMonth : b ?
+						"0" : a.data_volume_limit_size,
+						alertTimeReach : b ? "0" : a.data_volume_alert_percent,
+						monthlySent : "" == a.monthly_tx_bytes ? 0 : a.monthly_tx_bytes,
+						monthlyReceived : "" == a.monthly_rx_bytes ? 0 : a.monthly_rx_bytes,
+						monthlyConnectedTime : "" == a.monthly_time ? 0 : a.monthly_time
+					}
+				}
+				return f
+			}, null, !1)
+		},
+		setTrafficAlertInfo : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = "1" == a.dataLimitTypeChecked,
+				d = {
+					isTest : c,
+					goformId : "DATA_LIMIT_SETTING",
+					data_volume_limit_switch : a.dataLimitChecked
+				};
+				if ("1" == a.dataLimitChecked)
+					d.data_volume_limit_unit = b ? "data" : "time", d.data_volume_limit_size = b ? a.limitDataMonth : a.limitTimeMonth, d.data_volume_alert_percent = b ? a.alertDataReach : a.alertTimeReach;
+				return d
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getDlnaSetting : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "dlna_language,dlna_name,dlna_share_audio,dlna_share_video,dlna_share_image,dlna_scan_state,sd_card_state,sdcard_mode_option,dlna_rescan_end";
+				a.multi_data = 1;
+				return a
+			}, function (a) {
+				return a ? {
+					language : a.dlna_language,
+					deviceName : a.dlna_name,
+					shareAudio : a.dlna_share_audio,
+					shareVideo : a.dlna_share_video,
+					shareImage : a.dlna_share_image,
+					needRescan : "1" == a.dlna_scan_state,
+					dlnaEnable : !0,
+					dlna_scan : a.dlna_rescan_end
+				}
+				 : f
+			}, null, !1)
+		},
+		setDlnaSetting : function () {
+			function a(d) {
+				ua(d, b, a)
+			}
+			var b = arguments[1];
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					notCallback : !0,
+					goformId : "DLNA_SETTINGS",
+					dlna_language : a.language,
+					dlna_name : a.deviceName,
+					dlna_share_audio : a.shareAudio,
+					dlna_share_video : a.shareVideo,
+					dlna_share_image : a.shareImage
+				}
+			}, function (d) {
+				d && "success" == d.result ? s("dlna_rescan_end", a) : b(d)
+			}, null, !0)
+		},
+		rescanDlna : function () {
+			function a(d) {
+				ua(d, b, a)
+			}
+			var b = arguments[1];
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					notCallback : !0,
+					goformId : "DLNA_RESCAN"
+				}
+			}, function (d) {
+				d && "success" == d.result ? s("dlna_rescan_end", a) : b(d)
+			}, null, !0)
+		},
+		getUSSDResponse : function () {
+			var a = arguments[1];
+			return doStuff(arguments, {}, function (a) {
+				if ("send" == a.sendOrReply)
+					return {
+						isTest : c,
+						goformId : "USSD_PROCESS",
+						USSD_operator : a.operator,
+						USSD_send_number : a.strUSSDCommand,
+						notCallback : !0
+					};
+				if ("reply" == a.sendOrReply)
+					return {
+						isTest : c,
+						goformId : "USSD_PROCESS",
+						USSD_operator : a.operator,
+						USSD_reply_number : a.strUSSDCommand,
+						notCallback : !0
+					}
+			}, function (b) {
+				b ? "success" == b.result ? (callbackTemp = a, ta()) : a(!1, "ussd_fail") : a(!1, "ussd_fail")
+			}, null, !0)
+		},
+		USSDReplyCancel : function (a) {
+			function b() {
+				g.ajax({
+					url : "/goform/goform_get_cmd_process",
+					data : {
+						cmd : "ussd_write_flag"
+					},
+					cache : !1,
+					async : !0,
+					dataType : "json",
+					success : function (d) {
+						"15" == d.ussd_write_flag ? setTimeout(b, 1E3) : "13" == d.ussd_write_flag ? a(!0) : a(!1)
+					},
+					error : function () {
+						a(!1)
+					}
+				})
+			}
+			g.ajax({
+				url : "/goform/goform_set_cmd_process",
+				data : {
+					goformId : "USSD_PROCESS",
+					USSD_operator : "ussd_cancel"
+				},
+				cache : !1,
+				dataType : "json",
+				success : function (d) {
+					"success" == d.result ? b() : a(!1)
+				}
+			})
+		},
+		getNetworkUnlockTimes : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "unlock_nck_time"
+				}
+			}, function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		unlockNetwork : function () {
+			function a() {
+				5 < d ? (o(a), b({
+						result : "fail"
+					})) : "modem_imsi_waitnck" != C && (o(a), b({
+						result : "success"
+					}));
+				d++
+			}
+			var b = arguments[1],
+			d = 0;
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "UNLOCK_NETWORK",
+					notCallback : !0,
+					unlock_network_code : a.unlock_network_code
+				}
+			}, function (d) {
+				d && "success" == d.result ? z(a) : b({
+					result : "fail"
+				})
+			}, null, !0)
+		},
+		setUpdateInfoWarning : function () {
+			var a = arguments[1];
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "SET_UPGRADE_NOTICE",
+					upgrade_notice_flag : a.upgrade_notice_flag,
+					notCallback : !0
+				}
+			}, function (b) {
+				"success" == b.result ? a(!0) : a(!1)
+			}, null, !0)
+		},
+		getUpdateInfoWarning : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "upgrade_notice_flag"
+				}
+			},
+				function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		getAPStationBasic : va,
+		setAPStationBasic : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "WIFI_STA_CONTROL",
+					wifi_sta_connection : a.ap_station_enable,
+					ap_station_mode : a.ap_station_mode
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getHotspotList : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : 1,
+					cmd : "wifi_profile,wifi_profile1,wifi_profile2,wifi_profile3,wifi_profile4,wifi_profile5,wifi_profile_num"
+				}
+			}, function (a) {
+				if (a) {
+					for (var b = [], d = 0; 5 >= d; d++)
+						for (var c = "", c = 0 == d ? a.wifi_profile : a["wifi_profile" + d], c = c.split(";"), e = 0; e < c.length; e++) {
+							var g = c[e].split(",");
+							if (!g[0])
+								break;
+							b.push({
+								profileName : g[0],
+								fromProvider : g[1],
+								connectStatus : g[2],
+								signal : g[3],
+								ssid : g[4],
+								authMode : g[5],
+								encryptType : g[6],
+								password : "0" == g[7] ? "" : g[7],
+								keyID : g[8]
+							})
+						}
+					return {
+						hotspotList : b
+					}
+				}
+				return f
+			}, null, !1)
+		},
+		searchHotspot : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					goformId : "WLAN_SET_STA_REFRESH"
+				}
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		getSearchHotspotList : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : 1,
+					cmd : "scan_finish,EX_APLIST,EX_APLIST1"
+				}
+			}, function (a) {
+				if (a) {
+					if ("0" == a.scan_finish)
+						return {
+							scan_finish : !1,
+							hotspotList : []
+						};
+					for (var b = [], d = 0; 1 >= d; d++)
+						for (var c = (0 == d ? a.EX_APLIST : a.EX_APLIST1).split(";"), e = 0; e < c.length; e++) {
+							var g = c[e].split(",");
+							if (!g[0])
+								break;
+							b.push({
+								fromProvider : g[0],
+								connectStatus : g[1],
+								ssid : g[2],
+								signal : g[3],
+								channel : g[4],
+								authMode : g[5],
+								encryptType : g[6]
+							})
+						}
+					return {
+						scan_finish : !0,
+						hotspotList : b
+					}
+				}
+				return f
+			}, null, !1)
+		},
+		saveHotspot : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = a.apList,
+				d = "modify";
+				if ("" == a.profileName) {
+					var d = "add",
+					e = (jQuery.fn.jquery + Math.random()).replace(/\D/g, "");
+					a.profileName = e;
+					b.push({
+						profileName : e,
+						fromProvider : "0",
+						connectStatus : "0",
+						signal : a.signal,
+						ssid : a.ssid,
+						authMode : a.authMode,
+						encryptType : a.encryptType,
+						password : a.password || "0",
+						keyID : a.keyID
+					})
+				}
+				for (var e = {
+						profile0 : [],
+						profile1 : [],
+						profile2 : [],
+						profile3 : [],
+						profile4 : [],
+						profile5 : []
+					}, f = "", g = 0; g < b.length; g++) {
+					var i = "";
+					a.profileName == b[g].profileName ? f = i = la(a) : i = la(b[g]);
+					var j = parseInt(g /
+							5);
+					e["profile" + j].push(i)
+				}
+				return {
+					isTest : c,
+					goformId : "WIFI_SPOT_PROFILE_UPDATE",
+					wifi_profile : e.profile0.join(";"),
+					wifi_profile1 : e.profile1.join(";"),
+					wifi_profile2 : e.profile2.join(";"),
+					wifi_profile3 : e.profile3.join(";"),
+					wifi_profile4 : e.profile4.join(";"),
+					wifi_profile5 : e.profile5.join(";"),
+					wifi_profile_num : b.length,
+					wifi_update_profile : f,
+					action : d
+				}
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		deleteHotspot : function () {
+			return doStuff(arguments, {}, function (a) {
+				for (var b = a.apList, d = {
+						profile0 : [],
+						profile1 : [],
+						profile2 : [],
+						profile3 : [],
+						profile4 : [],
+						profile5 : []
+					}, e = !1, f = "", g = 0; g < b.length; g++) {
+					var i = la(b[g]);
+					if (b[g].profileName == a.profileName)
+						e = !0, f = i;
+					else {
+						var j = g;
+						e && (j = g - 1);
+						j = parseInt(j / 5);
+						d["profile" + j].push(i)
+					}
+				}
+				a = e ? b.length - 1 : b.length;
+				return {
+					isTest : c,
+					goformId : "WIFI_SPOT_PROFILE_UPDATE",
+					wifi_profile : d.profile0.join(";"),
+					wifi_profile1 : d.profile1.join(";"),
+					wifi_profile2 : d.profile2.join(";"),
+					wifi_profile3 : d.profile3.join(";"),
+					wifi_profile4 : d.profile4.join(";"),
+					wifi_profile5 : d.profile5.join(";"),
+					wifi_profile_num : a,
+					wifi_update_profile : f,
+					action : "delete"
+				}
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		connectHotspot : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "WLAN_SET_STA_CON",
+					EX_SSID1 : a.EX_SSID1,
+					EX_AuthMode : a.EX_AuthMode,
+					EX_EncrypType : a.EX_EncrypType,
+					EX_DefaultKeyID : a.EX_DefaultKeyID,
+					EX_WEPKEY : a.EX_WEPKEY,
+					EX_WPAPSK1 : a.EX_WPAPSK1,
+					EX_wifi_profile : a.EX_wifi_profile
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		disconnectHotspot : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					goformId : "WLAN_SET_STA_DISCON"
+				}
+			},
+				function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getOpMode : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : 1,
+					cmd : "opms_wan_mode,loginfo,ppp_status"
+				}
+			}, function (a) {
+				return a ? {
+					opms_wan_mode : a.opms_wan_mode,
+					loginfo : a.loginfo,
+					ppp_status : a.ppp_status
+				}
+				 : f
+			}, null, !1)
+		},
+		SetOperationMode : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c,
+					goformId : "OPERATION_MODE"
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		SendUpgradeMessage : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getPppoeParams : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : 1,
+					cmd : "pppoe_username,pppoe_password,pppoe_dial_mode,ppp_status,static_wan_ipaddr,static_wan_netmask,static_wan_gateway,static_wan_primary_dns,static_wan_secondary_dns,dhcp_wan_status,static_wan_status"
+				}
+			}, function (a) {
+				return a ? {
+					pppoe_username : a.pppoe_username,
+					pppoe_password : a.pppoe_password,
+					pppoe_dial_mode : a.pppoe_dial_mode,
+					ppp_status : a.ppp_status,
+					static_wan_ipaddr : a.static_wan_ipaddr,
+					static_wan_netmask : a.static_wan_netmask,
+					static_wan_gateway : a.static_wan_gateway,
+					static_wan_primary_dns : a.static_wan_primary_dns,
+					static_wan_secondary_dns : a.static_wan_secondary_dns,
+					dhcp_wan_status : a.dhcp_wan_status,
+					static_wan_status : a.static_wan_status
+				}
+				 : f
+			}, null, !1)
+		},
+		setPppoeDialMode : function (a, b) {
+			function d(a) {
+				"ppp_connecting" == a.ppp_status ? k = "ppp_connecting" : checkConnectedStatus(a.ppp_status) ? (o(d), k = "ppp_connected", b({
+							result : !0,
+							status : k
+						})) : (o(d), b({
+							result : !1
+						}))
+			}
+			function f(a) {
+				"ppp_disconnecting" == a.ppp_status ? k = "ppp_disconnecting" : "ppp_disconnected" == a.ppp_status ? (o(f), k = "ppp_disconnected", b({
+							result : !0,
+							status : k
+						})) : (o(f), b({
+							result : !1
+						}))
+			}
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c,
+					notCallback : !0
+				}, a)
+			}, function (c) {
+				"success" == c.result ? "WAN_GATEWAYMODE_PPPOE" == a.goformId && "connect" == a.action_link ? (showLoading("connecting"), z(d)) : "WAN_GATEWAYMODE_PPPOE" == a.goformId && "disconnect" == a.action_link ? z(f) : b({
+					result : !0
+				}) : b({
+					result : !1
+				})
+			},
+				null, !0)
+		},
+		getSntpParams : function (a, b) {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : 1,
+					cmd : "sntp_year,sntp_month_temp,sntp_day,sntp_hour,sntp_minute,sntp_second,sntp_time_set_mode,sntp_server_list1,sntp_server_list2,sntp_server_list3,sntp_server_list4,sntp_server_list5,sntp_server_list6,sntp_server_list7,sntp_server_list8,sntp_server_list9,sntp_server_list10,sntp_server0,sntp_server1,sntp_server2,sntp_other_server0,sntp_other_server1,sntp_other_server2,sntp_timezone,sntp_dst_enable,ppp_status,opms_wan_mode,syn_done"
+				}
+			},
+				function (a) {
+				if (a) {
+					for (var b = [], c = 0; 10 > c; c++) {
+						var e = "sntp_server_list" + (c + 1).toString();
+						if ("" != a[e]) {
+							var g = {};
+							g.name = a[e];
+							g.value = a[e];
+							b.push(g)
+						}
+					}
+					c = [{
+							name : "Other",
+							value : "Other"
+						}, {
+							name : "NONE",
+							value : ""
+						}
+					];
+					for (e = 0; 2 > e; e++)
+						b.push(c[e]);
+					return {
+						sntp_year : a.sntp_year,
+						sntp_month : a.sntp_month_temp,
+						sntp_day : a.sntp_day,
+						sntp_hour : a.sntp_hour,
+						sntp_minute : a.sntp_minute,
+						sntp_second : a.sntp_second,
+						sntp_time_set_mode : a.sntp_time_set_mode,
+						sntp_servers : b,
+						sntp_server0 : a.sntp_server0,
+						sntp_server1 : a.sntp_server1,
+						sntp_server2 : a.sntp_server2,
+						sntp_other_server0 : a.sntp_other_server0,
+						sntp_other_server1 : a.sntp_other_server1,
+						sntp_other_server2 : a.sntp_other_server2,
+						sntp_timezone : a.sntp_timezone,
+						sntp_dst_enable : a.sntp_dst_enable,
+						ppp_status : a.ppp_status,
+						opms_wan_mode : a.opms_wan_mode,
+						syn_done : a.syn_done
+					}
+				}
+				return f
+			}, null, !1)
+		},
+		setSntpSetting : function (a, b) {
+			function d() {
+				g.ajax({
+					url : "goform/goform_get_cmd_process",
+					dataType : "json",
+					data : {
+						cmd : "syn_done"
+					},
+					cache : !1,
+					async : !1,
+					success : function (a) {
+						"0" == a.syn_done ? b(!1) : "1" == a.syn_done ? b(!0) : setTimeout(d, 2E3)
+					},
+					error : function () {
+						b(!1)
+					}
+				})
+			}
+			var e = g.extend({
+					isTest : c
+				}, a);
+			e.isTest ? (result = simulate.simulateRequest(a, b, b, !0, !0), setTimeout(function () {
+					b(result)
+				}, getRandomInt(120) + 50)) : g.post("goform/goform_set_cmd_process", e, function (c) {
+				c && "success" == c.result ? "auto" == a.manualsettime ? setTimeout(d, 2E3) : b(!0) : b(!1)
+			}, "json")
+		},
+		setSNTPDate : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		addUrlFilterRule : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getUrlFilterList : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "websURLFilters"
+				}
+			}, function (a) {
+				var b = [];
+				if (a) {
+					if (0 == a.websURLFilters.length)
+						return {
+							urlFilterRules : []
+						};
+					for (var a = a.websURLFilters.split(";"), d = 0; d < a.length; d++) {
+						var c = {};
+						c.index = d;
+						c.url = a[d];
+						b.push(c)
+					}
+					return {
+						urlFilterRules : b
+					}
+				}
+				return f
+			}, null, !1)
+		},
+		deleteSelectedRules : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getWdsInfo : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "wifi_wds_mode,wifi_wds_ssid,wifi_wds_AuthMode,wifi_wds_EncrypType,wifi_wds_WPAPSK1,RadioOff"
+				}
+			}, function (a) {
+				return a ? {
+					currentMode : a.wifi_wds_mode,
+					wdsSSID : a.wifi_wds_ssid,
+					wdsAuthMode : a.wifi_wds_AuthMode,
+					wdsEncrypType : a.wifi_wds_EncrypType,
+					wdsWPAPSK1 : a.wifi_wds_WPAPSK1,
+					RadioOff : a.RadioOff
+				}
+				 : f
+			}, null, !1)
+		},
+		setWDS : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getSyslogInfo : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "syslog_mode,debug_level"
+				}
+			}, function (a) {
+				return a ? {
+					currentMode : a.syslog_mode,
+					debugLevel : a.debug_level
+				}
+				 : f
+			}, null, !1)
+		},
+		setSysLog : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getTR069Config : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "tr069_ServerURL,tr069_CPEPortNo,tr069_ServerUsername,tr069_ServerPassword,tr069_ConnectionRequestUname,tr069_ConnectionRequestPassword,wan_ipaddr,tr069_PeriodicInformEnable,tr069_PeriodicInformInterval,tr069_CertEnable,tr069_PeriodicInformTime"
+				}
+			}, function (a) {
+				return a ? {
+					serverUrl : a.tr069_ServerURL,
+					tr069_CPEPortNo : a.tr069_CPEPortNo,
+					serverUserName : a.tr069_ServerUsername,
+					serverPassword : a.tr069_ServerPassword,
+					requestUserName : a.tr069_ConnectionRequestUname,
+					requestPassword : a.tr069_ConnectionRequestPassword,
+					wanIpAddress : a.wan_ipaddr,
+					tr069_PeriodicInformEnable : a.tr069_PeriodicInformEnable,
+					tr069_PeriodicInformInterval : a.tr069_PeriodicInformInterval,
+					tr069_CertEnable : a.tr069_CertEnable,
+					tr069_PeriodicInformTime : a.tr069_PeriodicInformTime
+				}
+				 : f
+			}, null, !1)
+		},
+		setTR069Configuration : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getVoipSettings : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "voip_sip_outbound_enable,voip_sip_outbound_server,voip_sip_outbound_port,voip_sip_stun_enable,voip_sip_stun_server,voip_sip_register_time,voip_sip_port,voip_sip_rtp_port_min,voip_sip_rtp_port_max"
+				}
+			},
+				function (a) {
+				return a ? {
+					outboundEnable : a.voip_sip_outbound_enable,
+					outboundServer : a.voip_sip_outbound_server,
+					outboundPort : a.voip_sip_outbound_port,
+					stunModeEnable : a.voip_sip_stun_enable,
+					stunServer : a.voip_sip_stun_server,
+					registerTime : a.voip_sip_register_time,
+					sipPort : a.voip_sip_port,
+					rtpPortMin : a.voip_sip_rtp_port_min,
+					rtpPortMax : a.voip_sip_rtp_port_max
+				}
+				 : f
+			}, null, !1)
+		},
+		setVoipSettings : function (a, b) {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a :
+				f
+			}, null, !0)
+		},
+		getVoipUserDetails : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "voip_sip_register_server1,voip_sip_domain1,voip_sip_realm1,voip_sip_proxy_enable1,voip_sip_proxy_server1,voip_account_display_account1,voip_account_auth1,voip_account_password1,voip_user1_register_status"
+				}
+			}, function (a) {
+				return a ? {
+					sipRegisterServer : a.voip_sip_register_server1,
+					sipDomain : a.voip_sip_domain1,
+					sipRealm : a.voip_sip_realm1,
+					sipProxyMode : a.voip_sip_proxy_enable1,
+					voipSipProxyServer : a.voip_sip_proxy_server1,
+					displayName : a.voip_account_display_account1,
+					authorizedUserName : a.voip_account_auth1,
+					authorizedPassword : a.voip_account_password1,
+					voipRegisterStatus : a.voip_user1_register_status
+				} : f
+			}, null, !1)
+		},
+		getVoipUserRegisterStatus : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "voip_user1_register_status"
+				}
+			}, function (a) {
+				return a ? {
+					voipRegisterStatus : a.voip_user1_register_status
+				} : f
+			}, null, !1)
+		},
+		setVoipUserDetails : function () {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a &&
+				"success" == a.result ? a : f
+			}, null, !0)
+		},
+		setVoipAdvancedSettings : function () {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getVoipAdvancedSettings : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "voip_sip_t38_enable1,voip_sip_dtmf_method,voip_sip_encoder1,voip_sip_vad_enable1,voip_sip_cng_enable1"
+				}
+			}, function (a) {
+				return a ? {
+					sipT38Mode : a.voip_sip_t38_enable1,
+					currentDtmfMethod : a.voip_sip_dtmf_method,
+					currentVoipSipEncoderMethod : a.voip_sip_encoder1,
+					sipVadMode : a.voip_sip_vad_enable1,
+					sipCngMode : a.voip_sip_cng_enable1
+				}
+				 : f
+			}, null, !1)
+		},
+		getVoipSupplementaryService : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "voip_forwarding_model,voip_forwarding_uri1,voip_not_disturb_enable,voip_call_waiting_in_enable"
+				}
+			}, function (a) {
+				return a ? {
+					selectedMode : a.voip_forwarding_model,
+					voipForwardingUri : a.voip_forwarding_uri1,
+					sipProtocolIncomingCallMode : a.voip_not_disturb_enable,
+					sipProtocolCallWaitingMode : a.voip_call_waiting_in_enable
+				} : f
+			}, null, !1)
+		},
+		setVoipSupplementaryService : function () {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getMacFilterInfo : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					multi_data : "1",
+					cmd : "ACL_mode,wifi_mac_black_list,wifi_hostname_black_list,RadioOff,user_ip_addr"
+				}
+			}, function (a) {
+				return a ? {
+					ACL_mode : a.ACL_mode,
+					wifi_mac_black_list : a.wifi_mac_black_list,
+					wifi_hostname_black_list : a.wifi_hostname_black_list,
+					RadioOff : a.RadioOff,
+					user_ip_addr : a.user_ip_addr
+				} : f
+			}, null, !1)
+		},
+		setMacFilter : function () {
+			return doStuff(arguments, {}, function (a) {
+				return g.extend({
+					goformId : "WIFI_MAC_FILTER",
+					isTest : c
+				}, a)
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		restart : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.goformId = "REBOOT_DEVICE";
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		timerUpdaterEnable : timerUpdaterEnable,
+		clearTraffic : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					goformId : "RESET_DATA_COUNTER"
+				}
+			}, function (a) {
+				return a &&
+				"success" == a.result ? a : f
+			}, null, !0)
+		},
+		switchPortForLog : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "CHANGE_MODE";
+				b.change_mode = a.change_mode;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		childGroupList : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "childGroupList"
+				}
+			}, function (a) {
+				return a && (a.childGroupList || a.devices) ? c ? a.childGroupList : a : f
+			}, null, !1)
+		},
+		addChildGroup : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "ADD_DEVICE",
+					mac : a.macAddress
+				}
+			},
+				function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		removeChildGroup : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "DEL_DEVICE",
+					mac : a.mac
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		editHostName : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "EDIT_HOSTNAME",
+					mac : a.mac,
+					hostname : a.hostname
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getSiteWhiteList : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "site_white_list"
+				}
+			},
+				function (a) {
+				return a && (a.site_white_list || a.siteList) ? c ? a.site_white_list : a : {
+					siteList : []
+				}
+			}, null, !1)
+		},
+		removeSiteWhite : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "REMOVE_WHITE_SITE",
+					ids : a.ids.join(",")
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		saveSiteWhite : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "ADD_WHITE_SITE",
+					name : a.name,
+					site : a.site
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getTimeLimited : function () {
+			function a(a) {
+				if ("" == a.time_limited)
+					return {
+						time_limited : []
+					};
+				a = a.time_limited.split(";");
+				m.each(a, function (a) {
+					a = a.split("+");
+					2 == a.length && (b[a[0]] = a[1].split(","))
+				});
+				return b
+			}
+			var b = {
+				"0" : [],
+				1 : [],
+				2 : [],
+				3 : [],
+				4 : [],
+				5 : [],
+				6 : []
+			};
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "time_limited"
+				}
+			}, function (c) {
+				return c ? a(c) : b
+			}, null, !1)
+		},
+		saveTimeLimited : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "SAVE_TIME_LIMITED",
+					time_limited : a.time
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getParams : wa,
+		getNewVersionState : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "new_version_state";
+				return a
+			}, function (a) {
+				return a ? (a.hasNewVersion = "1" == a.new_version_state || "version_has_new_critical_software" == a.new_version_state || "version_has_new_optional_software" == a.new_version_state, a) : f
+			}, null, !1)
+		},
+		getUpgradeResult : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "upgrade_result";
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		getCurrentUpgradeState : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "current_upgrade_state";
+				return a
+			}, function (a) {
+				if (a) {
+					if ("downloading" == a.current_upgrade_state)
+						a.current_upgrade_state = "upgrading";
+					return a
+				}
+				return f
+			}, null, !1)
+		},
+		setUpgradeSelectOp : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {
+					goformId : "IF_UPGRADE"
+				};
+				b.isTest = c;
+				b.select_op = a.selectOp;
+				if ("check" == b.select_op)
+					b.ota_manual_check_roam_state = 1;
+				return b
+			}, function (a) {
+				return a ? a : f
+			}, null, !0)
+		},
+		addTimerThings : s,
+		removeTimerThings : A,
+		getPackSizeInfo : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "pack_size_info";
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		getNewVersionInfo : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "update_info";
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		getMandatory : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "OTA" == i.UPGRADE_TYPE ? "is_mandatory" : "new_version_state";
+				return a
+			}, function (a) {
+				return a ? "OTA" == i.UPGRADE_TYPE ? {
+					is_mandatory : "1" == a.is_mandatory
+				}
+				 : {
+					is_mandatory : "version_has_new_critical_software" == a.new_version_state
+				}
+				 : f
+			}, null, !1)
+		},
+		getUserChoice : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "if_has_select";
+				return a
+			}, function (a) {
+				return a ? a : f
+			}, null, !1)
+		},
+		getOTAUpdateSetting : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.cmd = "GetUpgAutoSetting";
+				return a
+			}, function (a) {
+				return a ? {
+					updateMode : a.UpgMode,
+					updateIntervalDay : a.UpgIntervalDay,
+					allowRoamingUpdate : a.UpgRoamPermission
+				}
+				 : f
+			}, null, !1)
+		},
+		setOTAUpdateSetting : function () {
+			return doStuff(arguments, {}, function (a) {
+				var b = {};
+				b.isTest = c;
+				b.goformId = "SetUpgAutoSetting";
+				b.UpgMode = a.updateMode;
+				b.UpgIntervalDay = a.updateIntervalDay;
+				b.UpgRoamPermission = a.allowRoamingUpdate;
+				return b
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		getSignalStrength : function (a, b, c) {
+			return wa({
+				nv : ["network_type", "rssi", "rscp", "lte_rsrp"]
+			}, b, c)
+		},
+		clearUpdateResult : function () {
+			return doStuff(arguments, {}, function () {
+				var a = {};
+				a.isTest = c;
+				a.goformId = "RESULT_RESTORE";
+				return a
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		timerUpdater : timerUpdater,
+		getHostNameList : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "hostNameList"
+				}
+			}, function (a) {
+				return a && (a.hostNameList || a.devices) ? c ? a.hostNameList : a : {
+					devices : []
+				}
+			}, null, !1)
+		},
+		getFastbootSetting : function () {
+			return doStuff(arguments, {}, function () {
+				return {
+					isTest : c,
+					cmd : "mgmt_quicken_power_on"
+				}
+			}, function (a) {
+				return {
+					fastbootEnabled : "1" == a.mgmt_quicken_power_on ? "1" : "0"
+				}
+			}, null, !1)
+		},
+		setFastbootSetting : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "MGMT_CONTROL_POWER_ON_SPEED",
+					mgmt_quicken_power_on : a.fastbootEnabled
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		},
+		refreshAPStationStatus : function () {
+			return va({}, function () {})
+		},
+		trafficCalibration : function () {
+			return doStuff(arguments, {}, function (a) {
+				return {
+					isTest : c,
+					goformId : "FLOW_CALIBRATION_MANUAL",
+					calibration_way : "0" == a.way ? "time" : "data",
+					time : "0" == a.way ? a.timeAdjust : 0,
+					data : "1" == a.way ? a.dataAdjust : 0
+				}
+			}, function (a) {
+				return a && "success" == a.result ? a : f
+			}, null, !0)
+		}
+	}
+});
